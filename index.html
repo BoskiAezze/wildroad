@@ -534,7 +534,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);
       <div style="font-size:34px;margin-bottom:6px">🦌</div>
       <div style="font-size:16px;font-weight:700">WildRoad</div>
       <div style="font-size:12px;color:var(--text2);margin-top:3px">Rejestr Zdarzeń z Udziałem Zwierząt</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px">v1.1.0 • Lokalnie + Google Sheets</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px">v1.1.1 • Lokalnie + Google Sheets</div>
     </div>
     <div class="btn-gap"></div>
     <button class="btn btn-secondary" style="font-size:13px;padding:10px;color:var(--accent3)" onclick="clearData()">🗑️ Wyczyść dane lokalne</button>
@@ -1152,26 +1152,86 @@ function testConnection() {
 }
 
 // ══════════════════════════════════════════════════════
-//  SHEETS
+//  SHEETS (NAPRAWIONE)
 // ══════════════════════════════════════════════════════
 async function pushToSheets(ev) {
   if (!settings.gsUrl) return;
-  try { await fetch(settings.gsUrl, { method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ action:'insert', row: evToRow(ev) }) }); }
-  catch(e) {}
+  try { 
+    await fetch(settings.gsUrl, { 
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'insert', row: evToRow(ev) }) 
+    }); 
+  } catch(e) { console.error("Błąd zapisu:", e); }
 }
+
 async function updateToSheets(ev) {
   if (!settings.gsUrl) return;
-  try { await fetch(settings.gsUrl, { method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ action:'update', id:ev.id, row: evToRow(ev) }) }); }
-  catch(e) {}
+
+  // 1. Zapis zdjęcia na Dysk Google (uruchamia się, jeśli zdjęcie to ciąg Base64)
+  if (ev.photo && ev.photo.startsWith('data:image')) {
+    try {
+      showToast('Wysyłanie zdjęcia na Dysk...');
+      
+      // Wyciągnij surowe dane ze stringa binarnego
+      const base64Data = ev.photo.split(',')[1];
+      const mimeType = ev.photo.substring(ev.photo.indexOf(':') + 1, ev.photo.indexOf(';'));
+
+      const uploadRes = await fetch(settings.gsUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'uploadPhoto',
+          base64: base64Data,
+          fileName: ev.photoName,
+          mimeType: mimeType
+        })
+      });
+
+      const uploadData = await uploadRes.json();
+      if (uploadData.status === 'ok') {
+        // Zastąp ciężki ciąg w pamięci telefonu lekkim adresem URL z Dysku!
+        ev.photo = uploadData.url;
+        saveLocal();
+        showToast('✅ Zdjęcie zapisane na Dysku');
+      }
+    } catch(e) {
+      console.error("Błąd wysyłania zdjęcia:", e);
+      showToast('❌ Błąd wysyłania zdjęcia');
+    }
+  }
+
+  // 2. Aktualizacja wiersza danych w Google Sheets
+  try { 
+    await fetch(settings.gsUrl, { 
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'update', id:ev.id, row: evToRow(ev) }) 
+    }); 
+  } catch(e) { console.error("Błąd aktualizacji:", e); }
 }
+
 function evToRow(ev) {
-  return [ev.id,ev.dataSgloszen,ev.godzinaSgloszen,ev.grupa,ev.droga,ev.km,ev.strona,
-    ev.gatunek,ev.osoba||'',ev.gpsRaw||'',
-    ev.latDeg||'',ev.latMin||'',ev.latSec||'',
-    ev.lngDeg||'',ev.lngMin||'',ev.lngSec||'',
-    ev.photoName||'',ev.godzinaDzialania||'',ev.virtualCol,ev.monthIndex||''];
+  // UWAGA: Dopasowano dokładnie do 18 nagłówków zdefiniowanych w backendzie, 
+  // aby zapobiec rozjazdowi kolumn w Google Sheets.
+  return [
+    ev.id,                   // 1. ID
+    ev.dataSgloszen,         // 2. Data Zgłoszenia
+    ev.godzinaSgloszen,      // 3. Godzina
+    ev.grupa,                // 4. Grupa
+    ev.droga,                // 5. Droga
+    ev.km,                   // 6. Km
+    ev.strona,               // 7. Strona
+    ev.gatunek,              // 8. Gatunek
+    ev.gpsRaw || '',         // 9. GPS_Raw
+    ev.latDeg || '',         // 10. Szer. stopnie
+    ev.latMin || '',         // 11. Szer. minuty
+    ev.latSec || '',         // 12. Szer. sekundy
+    ev.lngDeg || '',         // 13. Dług. stopnie
+    ev.lngMin || '',         // 14. Dług. minuty
+    ev.lngSec || '',         // 15. Dług. sekundy
+    ev.photoName || '',      // 16. Nazwa Zdjęcia
+    ev.godzinaDzialania||'', // 17. Godzina działania
+    ev.virtualCol            // 18. Wirtualna Kolumna (Nazwa dla CD)
+  ];
 }
 
 // ══════════════════════════════════════════════════════
