@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>WildRoad – Rejestr Zdarzeń</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d1117; --bg2:#161b22; --bg3:#21262d; --border:#30363d;
+  --accent:#3fb950; --accent2:#58a6ff; --accent3:#f78166; --accent4:#e3b341;
+  --text:#e6edf3; --text2:#8b949e; --text3:#484f58;
+  --card:#161b22; --pill-bg:#21262d; --input-bg:#0d1117;
+  --radius:16px; --radius-sm:10px;
+  --safe-top:env(safe-area-inset-top,44px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100dvh;overflow-x:hidden;max-width:430px;margin:0 auto;position:relative}
+
+.status-bar{height:var(--safe-top);background:var(--bg2);display:flex;align-items:flex-end;
+  justify-content:space-between;padding:0 20px 4px;font-size:12px;font-weight:600;color:var(--text2)}
+
+.screen{display:none;flex-direction:column;min-height:calc(100dvh - var(--safe-top));background:var(--bg)}
+.screen.active{display:flex}
+
+.navbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.navbar-title{font-size:17px;font-weight:700;letter-spacing:-.3px}
+.navbar-sub{font-size:11px;color:var(--text2);font-weight:400;margin-top:1px}
+.nav-btn{background:none;border:none;cursor:pointer;color:var(--accent2);font-size:22px;
+  padding:4px;display:flex;align-items:center;justify-content:center;width:36px;height:36px;
+  border-radius:50%;transition:background .15s}
+.nav-btn:active{background:var(--bg3)}
+
+.screen-body{flex:1;overflow-y:auto;padding:12px 14px;
+  padding-bottom:calc(80px + var(--safe-bottom));-webkit-overflow-scrolling:touch}
+
+.fab{position:fixed;bottom:calc(20px + var(--safe-bottom));right:20px;z-index:100;
+  background:var(--accent);color:#000;border:none;cursor:pointer;
+  width:58px;height:58px;border-radius:50%;font-size:28px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 20px rgba(63,185,80,.45);transition:transform .15s}
+.fab:active{transform:scale(.93)}
+
+.stats-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px 14px 4px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center}
+.stat-val{font-size:22px;font-weight:700;font-family:'DM Mono',monospace}
+.stat-lbl{font-size:10px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.stat-val.green{color:var(--accent)} .stat-val.blue{color:var(--accent2)} .stat-val.red{color:var(--accent3)}
+
+.month-bar{display:flex;gap:8px;padding:8px 14px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.month-bar::-webkit-scrollbar{display:none}
+.month-chip{flex-shrink:0;background:var(--pill-bg);border:1px solid var(--border);
+  border-radius:20px;padding:5px 12px;font-size:13px;font-weight:500;color:var(--text2);
+  cursor:pointer;transition:all .15s;white-space:nowrap}
+.month-chip.active{background:var(--accent2);border-color:var(--accent2);color:#000;font-weight:700}
+
+.filter-row{display:flex;gap:7px;padding:6px 14px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.filter-row::-webkit-scrollbar{display:none}
+.pill{flex-shrink:0;background:var(--pill-bg);border:1px solid var(--border);
+  border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--text2);
+  cursor:pointer;transition:all .15s;white-space:nowrap}
+.pill.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:700}
+
+.section-header{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;
+  letter-spacing:1.2px;padding:12px 4px 8px}
+
+.event-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:13px;margin-bottom:9px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.event-card:active{transform:scale(.98);border-color:var(--text2)}
+.event-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.event-card.step1::before{background:var(--accent2)}
+.event-card.step2::before{background:var(--accent)}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.card-animal{display:flex;align-items:center;gap:9px}
+.animal-icon{width:36px;height:36px;border-radius:9px;background:var(--bg3);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.card-title{font-size:15px;font-weight:700}
+.card-road{font-size:12px;color:var(--text2);margin-top:1px;font-family:'DM Mono',monospace}
+.card-index{font-size:10px;color:var(--accent4);font-weight:700;margin-top:2px;font-family:'DM Mono',monospace}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;flex-shrink:0;text-transform:uppercase;letter-spacing:.5px}
+.badge.step1{background:rgba(88,166,255,.15);color:var(--accent2)}
+.badge.step2{background:rgba(63,185,80,.15);color:var(--accent)}
+.card-bottom{display:flex;align-items:center;gap:7px;margin-top:9px;flex-wrap:wrap}
+.card-meta{font-size:11px;color:var(--text2)}
+.dot{width:3px;height:3px;border-radius:50%;background:var(--border)}
+.thumb{width:44px;height:36px;border-radius:5px;object-fit:cover;border:1px solid var(--border);margin-left:auto}
+
+.form-section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.form-section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.field{margin-bottom:12px} .field:last-child{margin-bottom:0}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;letter-spacing:.2px}
+.field label .req{color:var(--accent3);margin-left:2px}
+.input,.select{width:100%;background:var(--input-bg);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+  font-size:15px;padding:10px 12px;outline:none;transition:border-color .2s;-webkit-appearance:none}
+.input:focus,.select:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(88,166,255,.12)}
+.input::placeholder{color:var(--text3)}
+.select{cursor:pointer}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+/* NUMERIC INPUT */
+.num-input{width:100%;background:var(--input-bg);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:var(--text);font-family:'DM Mono',monospace;
+  font-size:16px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;
+  justify-content:space-between;min-height:44px;transition:border-color .2s;user-select:none}
+.num-input.focused{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(88,166,255,.12)}
+.num-input-val{flex:1}
+.num-placeholder{color:var(--text3);font-size:14px;font-family:'DM Sans',sans-serif}
+
+/* STRONA TOGGLE */
+.strona-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.strona-btn{background:var(--input-bg);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:11px 4px;text-align:center;cursor:pointer;
+  font-size:13px;font-weight:600;color:var(--text2);transition:all .15s;user-select:none}
+.strona-btn:active{transform:scale(.96)}
+.strona-btn.active{background:var(--accent2);border-color:var(--accent2);color:#000}
+
+/* GPS */
+.gps-block{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px}
+.gps-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.gps-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.gps-value{font-family:'DM Mono',monospace;font-size:12px;color:var(--accent)}
+.gps-divider{height:1px;background:var(--border);margin:7px 0}
+.gps-coords{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px}
+.coord-cell{background:var(--bg2);border-radius:6px;padding:6px 8px}
+.coord-lbl{font-size:9px;text-transform:uppercase;color:var(--text3);letter-spacing:.5px}
+.coord-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--text);margin-top:2px}
+
+/* PHOTO */
+.photo-upload{width:100%;border:2px dashed var(--border);border-radius:var(--radius-sm);
+  padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--input-bg)}
+.photo-upload:active{border-color:var(--accent)}
+.photo-upload.has-photo{border-style:solid;border-color:var(--accent);padding:0;overflow:hidden}
+.photo-upload img{width:100%;border-radius:10px;display:block}
+.upload-icon{font-size:28px;color:var(--text3)}
+.upload-text{font-size:13px;color:var(--text2);margin-top:5px}
+.upload-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* VIRTUAL COL */
+.virtual-col{background:rgba(63,185,80,.06);border:1px solid rgba(63,185,80,.2);
+  border-radius:var(--radius-sm);padding:9px 12px;display:flex;align-items:center;gap:8px}
+.vc-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);font-weight:500;word-break:break-all}
+
+/* STEP INDICATOR */
+.step-indicator{display:flex;align-items:center;padding:12px 14px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.step{flex:1;text-align:center;position:relative}
+.step::after{content:'';position:absolute;top:15px;left:calc(50% + 16px);right:calc(-50% + 16px);height:2px;background:var(--border)}
+.step:last-child::after{display:none}
+.step-circle{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;margin:0 auto 4px;position:relative;z-index:1}
+.step.active .step-circle{background:var(--accent2);color:#000}
+.step.done .step-circle{background:var(--accent);color:#000}
+.step.pending .step-circle{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+.step-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.step.active .step-lbl{color:var(--accent2)} .step.done .step-lbl{color:var(--accent)} .step.pending .step-lbl{color:var(--text3)}
+
+/* BUTTONS */
+.btn{width:100%;padding:13px;border-radius:var(--radius-sm);font-size:15px;font-weight:700;
+  border:none;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;letter-spacing:.1px}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#000;box-shadow:0 4px 14px rgba(63,185,80,.35)}
+.btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
+.btn-photo{background:var(--accent2);color:#000;box-shadow:0 4px 14px rgba(88,166,255,.35)}
+.btn-yellow{background:var(--accent4);color:#000;box-shadow:0 4px 14px rgba(227,179,65,.35)}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.btn-gap{height:9px}
+
+/* DETAIL */
+.detail-hero{background:var(--bg2);border-bottom:1px solid var(--border);padding:18px 16px}
+.detail-animal{font-size:38px;text-align:center}
+.detail-species{font-size:20px;font-weight:700;text-align:center;margin-top:4px}
+.detail-id{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);text-align:center;margin-top:2px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
+.detail-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px}
+.detail-item.full{grid-column:1/-1}
+.di-label{font-size:10px;text-transform:uppercase;color:var(--text3);letter-spacing:.5px;font-weight:600}
+.di-value{font-size:14px;font-weight:600;margin-top:3px}
+.di-value.mono{font-family:'DM Mono',monospace;font-size:13px}
+.di-value.green{color:var(--accent)} .di-value.blue{color:var(--accent2)} .di-value.yellow{color:var(--accent4)}
+
+/* EMPTY */
+.empty{text-align:center;padding:50px 20px;color:var(--text2)}
+.empty-icon{font-size:52px;margin-bottom:14px}
+.empty-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px}
+.empty-sub{font-size:13px;line-height:1.5}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(90px + var(--safe-bottom));left:50%;
+  transform:translateX(-50%) translateY(20px);background:var(--bg3);
+  border:1px solid var(--border);border-radius:12px;padding:10px 18px;
+  font-size:13px;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* SETTINGS */
+.settings-row{display:flex;align-items:center;justify-content:space-between;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px;margin-bottom:8px}
+.settings-lbl{font-size:14px;font-weight:500}
+.settings-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.toggle{width:46px;height:27px;background:var(--border);border-radius:14px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;width:21px;height:21px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s}
+.toggle.on::after{transform:translateX(19px)}
+
+/* TAB BAR */
+.tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
+  background:var(--bg2);border-top:1px solid var(--border);padding:8px 0 calc(8px + var(--safe-bottom));display:flex;z-index:50}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0;
+  transition:color .15s;background:none;border:none;color:var(--text3);font-family:'DM Sans',sans-serif}
+.tab.active{color:var(--accent)}
+.tab-icon{font-size:21px} .tab-lbl{font-size:10px;font-weight:600;letter-spacing:.3px}
+
+/* ━━━ NUMERIC KEYBOARD ━━━ */
+.numkbd-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);display:none;align-items:flex-end}
+.numkbd-overlay.open{display:flex}
+.numkbd{background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;
+  padding:14px 14px calc(14px + var(--safe-bottom));width:100%;animation:slideUp .22s ease}
+.numkbd-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.numkbd-label{font-size:13px;font-weight:700;color:var(--text2)}
+.numkbd-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px}
+.numkbd-display{background:var(--input-bg);border:1px solid var(--accent2);border-radius:10px;
+  padding:11px 14px;font-family:'DM Mono',monospace;font-size:20px;color:var(--text);
+  min-height:46px;margin-bottom:11px;letter-spacing:.5px;word-break:break-all;min-width:0}
+.prefix-row{display:flex;gap:6px;margin-bottom:9px}
+.prefix-btn{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:9px 0;font-size:13px;font-weight:700;color:var(--accent4);cursor:pointer;text-align:center;transition:all .15s}
+.prefix-btn:active{background:var(--accent4);color:#000;transform:scale(.95)}
+.keys-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.key{background:var(--bg3);border:1px solid var(--border);border-radius:11px;padding:15px 0;
+  font-size:20px;font-weight:700;color:var(--text);cursor:pointer;text-align:center;
+  transition:all .12s;user-select:none}
+.key:active{transform:scale(.93);background:var(--accent2);color:#000;border-color:var(--accent2)}
+.key.key-del{background:rgba(247,129,102,.1);color:var(--accent3)}
+.key.key-del:active{background:var(--accent3);color:#000}
+.key.key-plus{background:rgba(227,179,65,.1);color:var(--accent4)}
+.key.key-plus:active{background:var(--accent4);color:#000}
+.key.key-ok{background:var(--accent);color:#000;font-size:14px;font-weight:700}
+.key.key-clr{background:rgba(247,129,102,.07);color:var(--accent3);font-size:13px}
+
+/* REPORT BUTTON */
+.report-btn{display:flex;align-items:center;gap:10px;background:var(--card);
+  border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;
+  cursor:pointer;transition:all .15s;width:100%;margin-bottom:10px}
+.report-btn:active{border-color:var(--accent4);background:rgba(227,179,65,.07)}
+
+/* INNY */
+.inny-input{display:none;margin-top:7px}
+.inny-input.show{display:block}
+
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.screen.active .screen-body>*{animation:fadeIn .22s ease both}
+.screen.active .screen-body>*:nth-child(2){animation-delay:.04s}
+.screen.active .screen-body>*:nth-child(3){animation-delay:.08s}
+.screen.active .screen-body>*:nth-child(4){animation-delay:.12s}
+::-webkit-scrollbar{width:0}
+</style>
+</head>
+<body>
+
+<div class="status-bar">
+  <span id="statusTime">09:41</span>
+  <span>🔋 87%</span>
+</div>
+
+<!-- ══ SCREEN 1 – LISTA ══ -->
+<div class="screen active" id="screen-list">
+  <div class="navbar">
+    <div>
+      <div class="navbar-title">🦌 WildRoad</div>
+      <div class="navbar-sub">Rejestr Zdarzeń Drogowych</div>
+    </div>
+    <button class="nav-btn" onclick="showScreen('screen-settings')">⚙️</button>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-card"><div class="stat-val green" id="statTotal">0</div><div class="stat-lbl">Miesiąc</div></div>
+    <div class="stat-card"><div class="stat-val blue" id="statOdolion">0</div><div class="stat-lbl">Odolion</div></div>
+    <div class="stat-card"><div class="stat-val red" id="statKowal">0</div><div class="stat-lbl">Kowal</div></div>
+  </div>
+
+  <div class="month-bar" id="monthBar"></div>
+
+  <div class="filter-row">
+    <div class="pill active" onclick="filterList('all',this)">Wszystkie</div>
+    <div class="pill" onclick="filterList('step1',this)">⏳ Bez foto</div>
+    <div class="pill" onclick="filterList('step2',this)">✅ Kompletne</div>
+    <div class="pill" onclick="filterList('Odolion',this)">Odolion</div>
+    <div class="pill" onclick="filterList('Kowal',this)">Kowal</div>
+  </div>
+
+  <div class="screen-body">
+    <button class="report-btn" onclick="copyReport()">
+      <span style="font-size:22px">📋</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">Kopiuj Raport Dzienny</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:1px">Potwierdzenie zebrania odpadów – dziś</div>
+      </div>
+      <span style="font-size:18px;color:var(--text3)">›</span>
+    </button>
+
+    <div class="section-header" id="listHeader">—</div>
+    <div id="eventList"></div>
+  </div>
+
+  <button class="fab" onclick="openNewEvent()">+</button>
+
+  <div class="tab-bar">
+    <button class="tab active"><span class="tab-icon">📋</span><span class="tab-lbl">Rejestr</span></button>
+    <button class="tab" onclick="showScreen('screen-settings')"><span class="tab-icon">⚙️</span><span class="tab-lbl">Ustawienia</span></button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 2 – FORMULARZ ══ -->
+<div class="screen" id="screen-form">
+  <div class="navbar">
+    <button class="nav-btn" onclick="goBack('screen-list')">‹</button>
+    <div style="text-align:center">
+      <div class="navbar-title">Nowe Zgłoszenie</div>
+      <div class="navbar-sub">Krok 1 z 2</div>
+    </div>
+    <div style="width:36px"></div>
+  </div>
+
+  <div class="step-indicator">
+    <div class="step active"><div class="step-circle">1</div><div class="step-lbl">Dane</div></div>
+    <div class="step pending"><div class="step-circle">2</div><div class="step-lbl">Zdjęcie</div></div>
+  </div>
+
+  <div class="screen-body">
+
+    <div class="form-section">
+      <div class="form-section-title">📅 Czas Zdarzenia</div>
+      <div class="input-row">
+        <div class="field">
+          <label>Data zgłoszenia</label>
+          <input type="date" class="input" id="fDate" onchange="updateVirtualCol()">
+        </div>
+        <div class="field">
+          <label>Godzina</label>
+          <select class="select" id="fTime"></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">🗺️ Lokalizacja</div>
+      <div class="field">
+        <label>Grupa <span class="req">*</span></label>
+        <select class="select" id="fGrupa" onchange="updateVirtualCol()">
+          <option value="">— wybierz —</option>
+          <option>Odolion</option>
+          <option>Kowal</option>
+        </select>
+      </div>
+      <div class="input-row">
+        <div class="field">
+          <label>Numer Drogi</label>
+          <div class="num-input" id="fDrogaDisplay" onclick="openKeyboard('droga')">
+            <span class="num-input-val" id="fDrogaVal" data-val=""><span class="num-placeholder">np. DK62</span></span>
+            <span style="color:var(--text3);font-size:16px">⌨️</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Km / Pikietaż</label>
+          <div class="num-input" id="fKmDisplay" onclick="openKeyboard('km')">
+            <span class="num-input-val" id="fKmVal" data-val=""><span class="num-placeholder">55+400</span></span>
+            <span style="color:var(--text3);font-size:16px">⌨️</span>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Strona</label>
+        <div class="strona-row">
+          <div class="strona-btn" id="strL" onclick="selectStrona('Lewa')">⬅️ Lewa</div>
+          <div class="strona-btn" id="strO" onclick="selectStrona('Oś')">⬌ Oś</div>
+          <div class="strona-btn" id="strP" onclick="selectStrona('Prawa')">Prawa ➡️</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">🦊 Zwierzę &amp; Zgłaszający</div>
+      <div class="field">
+        <label>Gatunek</label>
+        <select class="select" id="fGatunek" onchange="updateVirtualCol()">
+          <option value="">— wybierz gatunek —</option>
+          <option>Sarna</option><option>Dzik</option><option>Jeleń</option>
+          <option>Łoś</option><option>Lis</option><option>Jenot</option>
+          <option>Borsuk</option><option>Zając</option><option>Jeż</option>
+          <option>Kuna</option><option>Norka</option><option>Wiewiórka</option>
+          <option>Ptak</option><option>Pies</option><option>Kot</option>
+          <option>Wilk</option><option>Ryś</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Osoba Zgłaszająca</label>
+        <select class="select" id="fOsoba" onchange="handleOsobaChange()">
+          <option value="">— wybierz —</option>
+          <option>OD Kowal</option>
+          <option>OD Odolion</option>
+          <option>FHU Jaroszewscy</option>
+          <option>PID</option>
+          <option>Policja</option>
+          <option value="__inny">Inna / Inny…</option>
+        </select>
+        <input class="input inny-input" id="fOsobaInny" placeholder="Wpisz nazwę osoby lub firmy">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">🔖 Podgląd Nazwy Pliku</div>
+      <div class="virtual-col"><span>✨</span><span class="vc-val" id="virtualColPreview">—</span></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:7px">Auto: Data · Droga · Km · Strona · Gatunek</div>
+    </div>
+
+    <div class="btn-gap"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" style="font-size:13px" onclick="saveStep1('list')">💾 Zapisz i dodaj kolejne</button>
+      <button class="btn btn-photo" style="font-size:13px" onclick="saveStep1('photo')">📷 Zapisz i zrób zdjęcie</button>
+    </div>
+    <div class="btn-gap"></div>
+    <button class="btn btn-secondary" onclick="goBack('screen-list')">Anuluj</button>
+    <div class="btn-gap"></div>
+
+  </div>
+</div>
+
+<!-- ══ SCREEN 3 – SZCZEGÓŁY ══ -->
+<div class="screen" id="screen-detail">
+  <div class="navbar">
+    <button class="nav-btn" onclick="goBack('screen-list')">‹</button>
+    <div style="text-align:center">
+      <div class="navbar-title">Szczegóły Zdarzenia</div>
+      <div class="navbar-sub" id="detailId">—</div>
+    </div>
+    <button class="nav-btn" id="editBtn" onclick="openStep2()">📷</button>
+  </div>
+  <div class="screen-body" id="detailBody"></div>
+</div>
+
+<!-- ══ SCREEN 4 – KROK 2 ══ -->
+<div class="screen" id="screen-step2">
+  <div class="navbar">
+    <button class="nav-btn" onclick="goBack('screen-detail')">‹</button>
+    <div style="text-align:center">
+      <div class="navbar-title">Dokumentacja w Terenie</div>
+      <div class="navbar-sub">Krok 2 – Zdjęcie + GPS</div>
+    </div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="step-indicator">
+    <div class="step done"><div class="step-circle">✓</div><div class="step-lbl">Dane</div></div>
+    <div class="step active"><div class="step-circle">2</div><div class="step-lbl">Zdjęcie</div></div>
+  </div>
+  <div class="screen-body">
+    <div class="form-section">
+      <div class="form-section-title">📸 Zdjęcie Dokumentacyjne</div>
+      <div class="field">
+        <div class="photo-upload" id="photoUploadZone" onclick="document.getElementById('photoInput').click()">
+          <div class="upload-icon">📷</div>
+          <div class="upload-text">Dotknij, aby dodać zdjęcie</div>
+          <div class="upload-sub">Plik nazwie się automatycznie wg schematu</div>
+        </div>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+      </div>
+      <div id="photoNameField" style="display:none;margin-top:8px">
+        <div class="virtual-col"><span>📁</span><span class="vc-val" id="photoFileName">—</span></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">📍 Lokalizacja GPS (auto)</div>
+      <div class="gps-block">
+        <div class="gps-row"><span class="gps-label">GPS Raw</span><span class="gps-value" id="gpsRaw">Pobieranie…</span></div>
+        <div class="gps-divider"></div>
+        <div class="gps-coords">
+          <div class="coord-cell"><div class="coord-lbl">Szer. stopnie</div><div class="coord-val" id="latDeg">—</div></div>
+          <div class="coord-cell"><div class="coord-lbl">Szer. minuty</div><div class="coord-val" id="latMin">—</div></div>
+          <div class="coord-cell"><div class="coord-lbl">Szer. sekundy</div><div class="coord-val" id="latSec">—</div></div>
+          <div class="coord-cell"><div class="coord-lbl">Dług. stopnie</div><div class="coord-val" id="lngDeg">—</div></div>
+          <div class="coord-cell"><div class="coord-lbl">Dług. minuty</div><div class="coord-val" id="lngMin">—</div></div>
+          <div class="coord-cell"><div class="coord-lbl">Dług. sekundy</div><div class="coord-val" id="lngSec">—</div></div>
+        </div>
+      </div>
+      <button class="btn btn-secondary" style="margin-top:9px;font-size:13px;padding:9px" onclick="getGPS()">🔄 Odśwież GPS</button>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">⏱️ Godzina Podjęcia Działania</div>
+      <div class="gps-block">
+        <div class="gps-row"><span class="gps-label">Ustawiona przy dodaniu zdjęcia</span><span class="gps-value" id="actionTime">—</span></div>
+      </div>
+    </div>
+    <div class="btn-gap"></div>
+    <button class="btn btn-photo" onclick="saveStep2()">💾 Zapisz Dokumentację</button>
+    <div class="btn-gap"></div>
+    <button class="btn btn-secondary" onclick="saveStep2WithoutPhoto()">Zapisz bez zdjęcia (tylko GPS)</button>
+    <div class="btn-gap"></div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 5 – USTAWIENIA ══ -->
+<div class="screen" id="screen-settings">
+  <div class="navbar">
+    <button class="nav-btn" onclick="goBack('screen-list')">‹</button>
+    <div style="text-align:center"><div class="navbar-title">Ustawienia</div></div>
+    <div style="width:36px"></div>
+  </div>
+  <div class="screen-body">
+    <div class="section-header">Integracja Google Sheets</div>
+    <div class="form-section">
+      <div class="form-section-title">🔗 Połączenie z Arkuszem</div>
+      <div class="field"><label>Web App URL (Apps Script)</label>
+        <input class="input" id="gsUrl" placeholder="https://script.google.com/macros/s/..." oninput="saveSettings()"></div>
+      <div class="field"><label>ID Arkusza Google</label>
+        <input class="input" id="gsSheetId" placeholder="1BxiMVs0XRA5..." oninput="saveSettings()"></div>
+      <div id="connectionStatus" style="margin-top:8px"></div>
+      <button class="btn btn-secondary" style="margin-top:9px;font-size:13px;padding:9px" onclick="testConnection()">🔌 Testuj połączenie</button>
+    </div>
+    <div class="section-header">Preferencje</div>
+    <div class="settings-row">
+      <div><div class="settings-lbl">Tryb offline</div><div class="settings-sub">Zapisuj lokalnie gdy brak sieci</div></div>
+      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div class="settings-row">
+      <div><div class="settings-lbl">GPS automatyczny</div><div class="settings-sub">Pobierz GPS przy Kroku 2</div></div>
+      <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div class="section-header">O Aplikacji</div>
+    <div class="form-section" style="text-align:center;padding:18px">
+      <div style="font-size:34px;margin-bottom:6px">🦌</div>
+      <div style="font-size:16px;font-weight:700">WildRoad</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:3px">Rejestr Zdarzeń z Udziałem Zwierząt</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px">v1.1.0 • Lokalnie + Google Sheets</div>
+    </div>
+    <div class="btn-gap"></div>
+    <button class="btn btn-secondary" style="font-size:13px;padding:10px;color:var(--accent3)" onclick="clearData()">🗑️ Wyczyść dane lokalne</button>
+    <div class="btn-gap"></div>
+  </div>
+</div>
+
+<!-- ━━━ NUMERIC KEYBOARD OVERLAY ━━━ -->
+<div class="numkbd-overlay" id="numKbdOverlay" onclick="closeKbdOutside(event)">
+  <div class="numkbd" id="numKbd">
+    <div class="numkbd-header">
+      <span class="numkbd-label" id="kbdLabel">Numer Drogi</span>
+      <button class="numkbd-close" onclick="closeKeyboard()">✕</button>
+    </div>
+    <div class="numkbd-display" id="kbdDisplay">—</div>
+    <div class="prefix-row" id="kbdPrefixRow">
+      <div class="prefix-btn" onclick="kbdPrefix('DK')">DK</div>
+      <div class="prefix-btn" onclick="kbdPrefix('DW')">DW</div>
+      <div class="prefix-btn" onclick="kbdPrefix('S')">S</div>
+      <div class="prefix-btn" onclick="kbdPrefix('A')">A</div>
+      <div class="prefix-btn" onclick="kbdPrefix('GP')">GP</div>
+    </div>
+    <div class="keys-grid" id="keysGrid"></div>
+    <button class="btn btn-primary" onclick="kbdConfirm()">✓ Zatwierdź</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let events   = JSON.parse(localStorage.getItem('wr_events')  || '[]');
+let settings = JSON.parse(localStorage.getItem('wr_settings') || '{}');
+let currentFilter = 'all';
+let currentMonth  = '';
+let editingId     = null;
+let currentGPS    = null;
+let photoDataURL  = null;
+let selectedStrona = '';
+let kbdTarget = '';
+let kbdValue  = '';
+
+const MONTHS_PL = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec',
+                   'Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initTimeDropdown();
+  initDefaultDate();
+  const now = new Date();
+  currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  if (events.length === 0) addDemoData();
+  buildMonthBar();
+  renderList();
+  updateStats();
+  loadSettings();
+  updateClock();
+  setInterval(updateClock, 1000);
+});
+
+function updateClock() {
+  const n = new Date();
+  document.getElementById('statusTime').textContent =
+    n.getHours().toString().padStart(2,'0') + ':' + n.getMinutes().toString().padStart(2,'0');
+}
+
+// ══════════════════════════════════════════════════════
+//  MONTH BAR
+// ══════════════════════════════════════════════════════
+function buildMonthBar() {
+  const bar = document.getElementById('monthBar');
+  const monthSet = new Set([currentMonth]);
+  events.forEach(e => { if (e.dataSgloszen) monthSet.add(e.dataSgloszen.slice(0,7)); });
+  const months = [...monthSet].sort((a,b) => b.localeCompare(a));
+  bar.innerHTML = months.map(m => {
+    const [y,mo] = m.split('-');
+    const label = MONTHS_PL[parseInt(mo)-1] + ' ' + y;
+    return `<div class="month-chip ${m===currentMonth?'active':''}" onclick="selectMonth('${m}',this)">${label}</div>`;
+  }).join('');
+}
+
+function selectMonth(m, el) {
+  currentMonth = m;
+  document.querySelectorAll('.month-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderList(); updateStats();
+}
+
+// ══════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function goBack(id) { showScreen(id); }
+
+// ══════════════════════════════════════════════════════
+//  TIME DROPDOWN
+// ══════════════════════════════════════════════════════
+function initTimeDropdown() {
+  const sel = document.getElementById('fTime');
+  sel.innerHTML = '';
+  for (let h = 0; h < 24; h++) {
+    for (let m of [0,30]) {
+      const hh = h.toString().padStart(2,'0'), mm = m.toString().padStart(2,'0');
+      const o = document.createElement('option');
+      o.value = o.textContent = `${hh}:${mm}`;
+      sel.appendChild(o);
+    }
+  }
+  const now = new Date();
+  sel.value = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes()<30?'00':'30'}`;
+}
+
+function initDefaultDate() {
+  document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
+}
+
+// ══════════════════════════════════════════════════════
+//  STRONA
+// ══════════════════════════════════════════════════════
+function selectStrona(val) {
+  selectedStrona = val;
+  document.getElementById('strL').classList.toggle('active', val==='Lewa');
+  document.getElementById('strO').classList.toggle('active', val==='Oś');
+  document.getElementById('strP').classList.toggle('active', val==='Prawa');
+  updateVirtualCol();
+}
+
+// ══════════════════════════════════════════════════════
+//  OSOBA
+// ══════════════════════════════════════════════════════
+function handleOsobaChange() {
+  const v = document.getElementById('fOsoba').value;
+  document.getElementById('fOsobaInny').classList.toggle('show', v === '__inny');
+}
+
+function getOsoba() {
+  const v = document.getElementById('fOsoba').value;
+  if (v === '__inny') return document.getElementById('fOsobaInny').value.trim() || 'Inna';
+  return v;
+}
+
+// ══════════════════════════════════════════════════════
+//  VIRTUAL COLUMN
+// ══════════════════════════════════════════════════════
+function updateVirtualCol() {
+  const raw = document.getElementById('fDate').value || new Date().toISOString().slice(0,10);
+  const d = raw.replace(/-/g,'');
+  const droga = document.getElementById('fDrogaVal').dataset.val || '—';
+  const km    = document.getElementById('fKmVal').dataset.val    || '—';
+  const sCh   = selectedStrona ? selectedStrona.charAt(0).toUpperCase() : '?';
+  const gat   = document.getElementById('fGatunek').value || '—';
+  document.getElementById('virtualColPreview').textContent = `${d}_${droga}_${km}_${sCh}_${gat}`;
+}
+
+// ══════════════════════════════════════════════════════
+//  NUMERIC KEYBOARD
+// ══════════════════════════════════════════════════════
+function openKeyboard(target) {
+  kbdTarget = target;
+  const isRoad = target === 'droga';
+  kbdValue = isRoad
+    ? (document.getElementById('fDrogaVal').dataset.val || '')
+    : (document.getElementById('fKmVal').dataset.val || '');
+
+  document.getElementById('kbdLabel').textContent = isRoad ? 'Numer Drogi' : 'Kilometr / Pikietaż';
+  document.getElementById('kbdPrefixRow').style.display = isRoad ? 'flex' : 'none';
+
+  // Build keys
+  const grid = document.getElementById('keysGrid');
+  if (isRoad) {
+    grid.innerHTML = `
+      <div class="key" onclick="kbdT('7')">7</div><div class="key" onclick="kbdT('8')">8</div><div class="key" onclick="kbdT('9')">9</div>
+      <div class="key" onclick="kbdT('4')">4</div><div class="key" onclick="kbdT('5')">5</div><div class="key" onclick="kbdT('6')">6</div>
+      <div class="key" onclick="kbdT('1')">1</div><div class="key" onclick="kbdT('2')">2</div><div class="key" onclick="kbdT('3')">3</div>
+      <div class="key key-clr" onclick="kbdClear()">CLR</div><div class="key" onclick="kbdT('0')">0</div><div class="key key-del" onclick="kbdDel()">⌫</div>`;
+  } else {
+    grid.innerHTML = `
+      <div class="key" onclick="kbdT('7')">7</div><div class="key" onclick="kbdT('8')">8</div><div class="key" onclick="kbdT('9')">9</div>
+      <div class="key" onclick="kbdT('4')">4</div><div class="key" onclick="kbdT('5')">5</div><div class="key" onclick="kbdT('6')">6</div>
+      <div class="key" onclick="kbdT('1')">1</div><div class="key" onclick="kbdT('2')">2</div><div class="key" onclick="kbdT('3')">3</div>
+      <div class="key key-plus" onclick="kbdT('+')">+</div><div class="key" onclick="kbdT('0')">0</div><div class="key key-del" onclick="kbdDel()">⌫</div>
+      <div class="key key-clr" onclick="kbdClear()">CLR</div><div class="key" style="grid-column:span 2" onclick="kbdT('000')">000</div>`;
+  }
+
+  updateKbdDisplay();
+  document.getElementById('numKbdOverlay').classList.add('open');
+  document.getElementById(isRoad ? 'fDrogaDisplay' : 'fKmDisplay').classList.add('focused');
+}
+
+function closeKeyboard() {
+  document.getElementById('numKbdOverlay').classList.remove('open');
+  document.querySelectorAll('.num-input').forEach(el => el.classList.remove('focused'));
+}
+function closeKbdOutside(e) { if (e.target === document.getElementById('numKbdOverlay')) closeKeyboard(); }
+
+function kbdT(ch)       { kbdValue += ch; updateKbdDisplay(); }
+function kbdPrefix(p)   { kbdValue = p;   updateKbdDisplay(); }
+function kbdDel()       { kbdValue = kbdValue.slice(0,-1); updateKbdDisplay(); }
+function kbdClear()     { kbdValue = '';   updateKbdDisplay(); }
+function updateKbdDisplay() { document.getElementById('kbdDisplay').textContent = kbdValue || '—'; }
+
+function kbdConfirm() {
+  const val = kbdValue.trim();
+  const isRoad = kbdTarget === 'droga';
+  const el = document.getElementById(isRoad ? 'fDrogaVal' : 'fKmVal');
+  el.dataset.val = val;
+  el.innerHTML = val ? val : `<span class="num-placeholder">${isRoad ? 'np. DK62' : '55+400'}</span>`;
+  updateVirtualCol();
+  closeKeyboard();
+}
+
+// ══════════════════════════════════════════════════════
+//  SAVE STEP 1
+// ══════════════════════════════════════════════════════
+function saveStep1(afterAction) {
+  const grupa = document.getElementById('fGrupa').value;
+  if (!grupa) { showToast('⚠️ Wybierz grupę!'); return; }
+
+  const id      = 'WR-' + Date.now().toString(36).toUpperCase();
+  const dateRaw = document.getElementById('fDate').value;
+  const d       = dateRaw.replace(/-/g,'');
+  const droga   = document.getElementById('fDrogaVal').dataset.val || '';
+  const km      = document.getElementById('fKmVal').dataset.val    || '';
+  const sCh     = selectedStrona ? selectedStrona.charAt(0).toUpperCase() : '?';
+  const gatunek = document.getElementById('fGatunek').value || '';
+  const osoba   = getOsoba();
+  const vc      = `${d}_${droga}_${km}_${sCh}_${gatunek}`;
+  const month   = dateRaw.slice(0,7);
+  const idx     = events.filter(e => e.dataSgloszen && e.dataSgloszen.slice(0,7) === month).length + 1;
+
+  const ev = {
+    id, dataSgloszen: dateRaw,
+    godzinaSgloszen: document.getElementById('fTime').value,
+    grupa, droga, km, strona: selectedStrona, gatunek, osoba,
+    gpsRaw:null, lat:null, lng:null,
+    latDeg:null, latMin:null, latSec:null, lngDeg:null, lngMin:null, lngSec:null,
+    photo:null, photoName:null, godzinaDzialania:null,
+    virtualCol: vc, step:1, monthIndex: idx, ts: Date.now()
+  };
+
+  events.unshift(ev);
+  saveLocal(); pushToSheets(ev);
+
+  if (afterAction === 'photo') {
+    editingId = id;
+    renderList(); updateStats(); buildMonthBar();
+    openStep2();
+  } else {
+    renderList(); updateStats(); buildMonthBar();
+    showToast(`✅ Zgłoszenie #${idx} zapisane!`);
+    resetForm();
+  }
+}
+
+function resetForm() {
+  document.getElementById('fGrupa').value   = '';
+  document.getElementById('fGatunek').value = '';
+  document.getElementById('fOsoba').value   = '';
+  document.getElementById('fOsobaInny').value = '';
+  document.getElementById('fOsobaInny').classList.remove('show');
+  const dv = document.getElementById('fDrogaVal');
+  dv.dataset.val = ''; dv.innerHTML = '<span class="num-placeholder">np. DK62</span>';
+  const kv = document.getElementById('fKmVal');
+  kv.dataset.val = ''; kv.innerHTML = '<span class="num-placeholder">55+400</span>';
+  selectedStrona = '';
+  ['strL','strO','strP'].forEach(id => document.getElementById(id).classList.remove('active'));
+  initDefaultDate(); initTimeDropdown(); updateVirtualCol();
+}
+
+// ══════════════════════════════════════════════════════
+//  STEP 2
+// ══════════════════════════════════════════════════════
+function openStep2() {
+  photoDataURL = null; currentGPS = null;
+  const zone = document.getElementById('photoUploadZone');
+  zone.classList.remove('has-photo');
+  zone.innerHTML = `<div class="upload-icon">📷</div>
+    <div class="upload-text">Dotknij, aby dodać zdjęcie</div>
+    <div class="upload-sub">Plik nazwie się automatycznie wg schematu</div>`;
+  ['gpsRaw','latDeg','latMin','latSec','lngDeg','lngMin','lngSec','actionTime']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '—'; });
+  document.getElementById('gpsRaw').textContent = 'Pobieranie…';
+  document.getElementById('photoNameField').style.display = 'none';
+  document.getElementById('photoInput').value = '';
+  getGPS();
+  showScreen('screen-step2');
+}
+
+function saveStep2() {
+  const ev = events.find(e => e.id === editingId); if (!ev) return;
+  const now = new Date();
+  const t = document.getElementById('actionTime').textContent;
+  ev.godzinaDzialania = t !== '—' ? t :
+    `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  applyGPS(ev);
+  if (photoDataURL) { ev.photo = photoDataURL; ev.photoName = ev.virtualCol + '.jpg'; ev.step = 2; }
+  saveLocal(); renderList(); updateStats(); updateToSheets(ev);
+  showToast('📸 Dokumentacja zapisana!');
+  openDetail(editingId); showScreen('screen-detail');
+}
+
+function saveStep2WithoutPhoto() {
+  const ev = events.find(e => e.id === editingId); if (!ev) return;
+  applyGPS(ev);
+  saveLocal(); renderList();
+  showToast('📍 GPS zapisany');
+  openDetail(editingId); showScreen('screen-detail');
+}
+
+function applyGPS(ev) {
+  if (!currentGPS) return;
+  ev.gpsRaw = `${currentGPS.lat.toFixed(6)}, ${currentGPS.lng.toFixed(6)}`;
+  ev.lat = currentGPS.lat; ev.lng = currentGPS.lng;
+  const la = dms(currentGPS.lat), lo = dms(currentGPS.lng);
+  ev.latDeg=la.d; ev.latMin=la.m; ev.latSec=la.s;
+  ev.lngDeg=lo.d; ev.lngMin=lo.m; ev.lngSec=lo.s;
+}
+
+// ══════════════════════════════════════════════════════
+//  PHOTO
+// ══════════════════════════════════════════════════════
+function handlePhoto(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    photoDataURL = e.target.result;
+    const zone = document.getElementById('photoUploadZone');
+    zone.classList.add('has-photo');
+    zone.innerHTML = `<img src="${photoDataURL}" alt="Zdjęcie">`;
+    const now = new Date();
+    document.getElementById('actionTime').textContent =
+      `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+    document.getElementById('photoNameField').style.display = 'block';
+    const ev = events.find(e => e.id === editingId);
+    if (ev) document.getElementById('photoFileName').textContent = ev.virtualCol + '.jpg';
+    getGPS();
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+// ══════════════════════════════════════════════════════
+//  GPS
+// ══════════════════════════════════════════════════════
+function getGPS() {
+  document.getElementById('gpsRaw').textContent = 'Pobieranie…';
+  if (!navigator.geolocation) { document.getElementById('gpsRaw').textContent = 'GPS niedostępny'; return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+    currentGPS = { lat, lng };
+    document.getElementById('gpsRaw').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    const la = dms(lat), lo = dms(lng);
+    document.getElementById('latDeg').textContent = la.d + '°';
+    document.getElementById('latMin').textContent = la.m + "'";
+    document.getElementById('latSec').textContent = la.s + '"';
+    document.getElementById('lngDeg').textContent = lo.d + '°';
+    document.getElementById('lngMin').textContent = lo.m + "'";
+    document.getElementById('lngSec').textContent = lo.s + '"';
+  }, () => { document.getElementById('gpsRaw').textContent = 'Brak zgody na GPS'; },
+  { enableHighAccuracy:true, timeout:12000 });
+}
+
+function dms(dd) {
+  const d = Math.floor(Math.abs(dd));
+  const mFull = (Math.abs(dd) - d) * 60;
+  const m = Math.floor(mFull);
+  const s = ((mFull - m) * 60).toFixed(4);
+  return { d, m, s };
+}
+
+// ══════════════════════════════════════════════════════
+//  NEW EVENT
+// ══════════════════════════════════════════════════════
+function openNewEvent() {
+  editingId = null;
+  resetForm();
+  showScreen('screen-form');
+}
+
+// ══════════════════════════════════════════════════════
+//  DETAIL
+// ══════════════════════════════════════════════════════
+function openDetail(id) {
+  editingId = id;
+  const ev = events.find(e => e.id === id); if (!ev) return;
+  document.getElementById('detailId').textContent = ev.id;
+  document.getElementById('editBtn').style.display = ev.step === 1 ? 'flex' : 'none';
+
+  const [,mo] = ev.dataSgloszen.slice(0,7).split('-');
+  const monthLbl = MONTHS_PL[parseInt(mo)-1];
+
+  const stepBadge = ev.step === 1
+    ? `<span class="badge step1">⏳ Oczekuje zdjęcia</span>`
+    : `<span class="badge step2">✅ Kompletne</span>`;
+
+  const photoHtml = ev.photo
+    ? `<div class="detail-item full"><div class="di-label">Zdjęcie</div>
+       <img src="${ev.photo}" style="width:100%;border-radius:8px;margin-top:6px;max-height:200px;object-fit:cover">
+       <div style="font-size:11px;color:var(--text3);margin-top:4px;font-family:'DM Mono',monospace">${ev.photoName||'—'}</div></div>`
+    : `<div class="detail-item full"><div class="di-label">Zdjęcie</div>
+       <div style="text-align:center;padding:14px;color:var(--text3);font-size:13px">📷 Brak — dodaj w Kroku 2</div></div>`;
+
+  const gpsHtml = ev.gpsRaw
+    ? `<div class="detail-item full"><div class="di-label">GPS</div><div class="di-value mono green">${ev.gpsRaw}</div></div>
+       <div class="detail-item"><div class="di-label">Szerokość</div><div class="di-value mono">${ev.latDeg}° ${ev.latMin}' ${ev.latSec}"</div></div>
+       <div class="detail-item"><div class="di-label">Długość</div><div class="di-value mono">${ev.lngDeg}° ${ev.lngMin}' ${ev.lngSec}"</div></div>`
+    : `<div class="detail-item full"><div class="di-label">GPS</div>
+       <div style="color:var(--text3);font-size:13px;margin-top:3px">Brak — zostanie pobrane w Kroku 2</div></div>`;
+
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-hero">
+      <div class="detail-animal">${getEmoji(ev.gatunek)}</div>
+      <div class="detail-species">${ev.gatunek||'Nieznany'}</div>
+      <div class="detail-id">${ev.id}</div>
+      <div style="text-align:center;margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+        ${stepBadge}
+        <span style="background:rgba(227,179,65,.15);color:var(--accent4);font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;text-transform:uppercase">
+          #${ev.monthIndex||'?'} / ${monthLbl}
+        </span>
+      </div>
+    </div>
+    <div style="padding:0">
+    <div class="detail-grid">
+      <div class="detail-item"><div class="di-label">Data zgłoszenia</div><div class="di-value">${fmtDate(ev.dataSgloszen)}</div></div>
+      <div class="detail-item"><div class="di-label">Godzina</div><div class="di-value mono blue">${ev.godzinaSgloszen}</div></div>
+      <div class="detail-item"><div class="di-label">Grupa</div><div class="di-value">${ev.grupa}</div></div>
+      <div class="detail-item"><div class="di-label">Strona</div><div class="di-value">${ev.strona||'—'}</div></div>
+      <div class="detail-item"><div class="di-label">Numer drogi</div><div class="di-value mono">${ev.droga||'—'}</div></div>
+      <div class="detail-item"><div class="di-label">Km / Pikietaż</div><div class="di-value mono">${ev.km||'—'}</div></div>
+      <div class="detail-item"><div class="di-label">Osoba zgłaszająca</div><div class="di-value" style="font-size:13px">${ev.osoba||'—'}</div></div>
+      <div class="detail-item"><div class="di-label">Godz. działania</div><div class="di-value mono ${ev.godzinaDzialania?'green':''}">${ev.godzinaDzialania||'—'}</div></div>
+      ${gpsHtml}
+      ${photoHtml}
+      <div class="detail-item full"><div class="di-label">Nazwa pliku (CD)</div>
+        <div class="di-value mono green" style="font-size:12px;word-break:break-all">${ev.virtualCol}</div></div>
+    </div>
+    ${ev.step===1 ? `<button class="btn btn-photo" onclick="openStep2()" style="margin-top:4px">📸 Dodaj Zdjęcie (Krok 2)</button><div class="btn-gap"></div>` : ''}
+    </div>`;
+}
+
+function openEventCard(id) { openDetail(id); showScreen('screen-detail'); }
+
+// ══════════════════════════════════════════════════════
+//  RENDER LIST
+// ══════════════════════════════════════════════════════
+function renderList() {
+  const list = document.getElementById('eventList');
+  const [y,mo] = currentMonth.split('-');
+  document.getElementById('listHeader').textContent = MONTHS_PL[parseInt(mo)-1] + ' ' + y;
+
+  const filtered = events.filter(ev => {
+    if (!ev.dataSgloszen || ev.dataSgloszen.slice(0,7) !== currentMonth) return false;
+    if (currentFilter === 'step1')   return ev.step === 1;
+    if (currentFilter === 'step2')   return ev.step === 2;
+    if (currentFilter === 'Odolion') return ev.grupa === 'Odolion';
+    if (currentFilter === 'Kowal')   return ev.grupa === 'Kowal';
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🦔</div>
+      <div class="empty-title">Brak zdarzeń</div>
+      <div class="empty-sub">Naciśnij <b>+</b> aby dodać nowe zgłoszenie</div></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(ev => {
+    const sc = ev.step===1 ? 'step1':'step2';
+    const bt = ev.step===1 ? 'Oczekuje foto':'Kompletne';
+    const thumb = ev.photo ? `<img class="thumb" src="${ev.photo}" alt="">` : '';
+    const [,emo] = currentMonth.split('-');
+    return `<div class="event-card ${sc}" onclick="openEventCard('${ev.id}')">
+      <div class="card-top">
+        <div class="card-animal">
+          <div class="animal-icon">${getEmoji(ev.gatunek)}</div>
+          <div>
+            <div class="card-title">${ev.gatunek||'Nieznany'}</div>
+            <div class="card-road">${ev.droga||'—'} · ${ev.km||'—'}</div>
+            <div class="card-index">#${ev.monthIndex||'?'} · ${MONTHS_PL[parseInt(emo)-1]}</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span class="badge ${sc}">${bt}</span>${thumb}
+        </div>
+      </div>
+      <div class="card-bottom">
+        <div class="card-meta">🕐 ${ev.godzinaSgloszen}</div>
+        <div class="dot"></div>
+        <div class="card-meta">📍 ${ev.strona||'—'}</div>
+        <div class="dot"></div>
+        <div class="card-meta">👥 ${ev.grupa}</div>
+        ${ev.osoba ? `<div class="dot"></div><div class="card-meta" style="color:var(--text3)">${ev.osoba}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterList(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+}
+
+// ══════════════════════════════════════════════════════
+//  STATS
+// ══════════════════════════════════════════════════════
+function updateStats() {
+  const m = events.filter(e => e.dataSgloszen && e.dataSgloszen.slice(0,7) === currentMonth);
+  document.getElementById('statTotal').textContent   = m.length;
+  document.getElementById('statOdolion').textContent = m.filter(e => e.grupa==='Odolion').length;
+  document.getElementById('statKowal').textContent   = m.filter(e => e.grupa==='Kowal').length;
+}
+
+// ══════════════════════════════════════════════════════
+//  COPY REPORT
+// ══════════════════════════════════════════════════════
+function copyReport() {
+  const today = new Date().toISOString().slice(0,10);
+  const todayEvs = events.filter(e => e.dataSgloszen === today);
+
+  if (todayEvs.length === 0) { showToast('⚠️ Brak zdarzeń z dzisiaj'); return; }
+
+  const [y,mo,d] = today.split('-');
+  const dateFmt  = `${d}.${mo}.${y}`;
+
+  const stronaCh = s => s==='Oś'?'O' : s==='Lewa'?'L' : s==='Prawa'?'P' : (s||'?');
+
+  const fmtLine = ev =>
+    `${ev.droga||'—'} ${ev.km||'—'} ${stronaCh(ev.strona)} ${ev.gatunek||'—'} `+
+    `${ev.godzinaSgloszen||'—'}/${ev.godzinaDzialania||'—'} ${ev.osoba||'—'}`;
+
+  const odolion = todayEvs.filter(e => e.grupa==='Odolion').sort((a,b) => a.ts-b.ts);
+  const kowal   = todayEvs.filter(e => e.grupa==='Kowal'  ).sort((a,b) => a.ts-b.ts);
+
+  let text = `Potwierdzenie zebrania odpadów z dnia ${dateFmt}\n`;
+  if (odolion.length) { text += `\nOdolion\n`; odolion.forEach(ev => text += fmtLine(ev)+'\n'); }
+  if (kowal.length)   { text += `\nKowal\n`;   kowal.forEach(ev   => text += fmtLine(ev)+'\n'); }
+
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text)
+      .then(()  => showToast('📋 Raport skopiowany do schowka!'))
+      .catch(()  => fallbackCopy(text));
+  } else { fallbackCopy(text); }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;top:-99px';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); showToast('📋 Raport skopiowany!'); }
+  catch(e) { showToast('❌ Nie udało się skopiować'); }
+  document.body.removeChild(ta);
+}
+
+// ══════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════
+function getEmoji(g) {
+  const m = {sarna:'🦌',jeleń:'🦌','łoś':'🫎',dzik:'🐗',lis:'🦊',jenot:'🦝',
+    borsuk:'🦡','zając':'🐇','jeż':'🦔',kuna:'🦦',norka:'🦦','wiewiórka':'🐿️',
+    ptak:'🐦',pies:'🐕',kot:'🐱',wilk:'🐺','ryś':'🐆'};
+  return m[(g||'').toLowerCase()] || '🐾';
+}
+function fmtDate(ds) {
+  if (!ds) return '—';
+  const p = ds.split('-'); return `${p[2]}.${p[1]}.${p[0]}`;
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+function saveLocal() { localStorage.setItem('wr_events', JSON.stringify(events)); }
+function clearData() {
+  if (confirm('Wyczyścić wszystkie dane lokalne?')) {
+    events = []; saveLocal(); renderList(); updateStats(); buildMonthBar();
+    showToast('🗑️ Dane wyczyszczone');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  SETTINGS
+// ══════════════════════════════════════════════════════
+function loadSettings() {
+  if (settings.gsUrl)     document.getElementById('gsUrl').value     = settings.gsUrl;
+  if (settings.gsSheetId) document.getElementById('gsSheetId').value = settings.gsSheetId;
+}
+function saveSettings() {
+  settings.gsUrl     = document.getElementById('gsUrl').value;
+  settings.gsSheetId = document.getElementById('gsSheetId').value;
+  localStorage.setItem('wr_settings', JSON.stringify(settings));
+}
+function testConnection() {
+  const url = document.getElementById('gsUrl').value;
+  if (!url) { showToast('⚠️ Podaj URL Apps Script'); return; }
+  const div = document.getElementById('connectionStatus');
+  div.innerHTML = '<span style="color:var(--text2);font-size:12px">🔄 Testowanie…</span>';
+  fetch(url + '?action=ping').then(r => r.json()).then(d => {
+    if (d.status === 'ok') {
+      div.innerHTML = '<span style="color:var(--accent);font-size:12px;font-weight:600">● Połączono</span>';
+      showToast('✅ Połączenie działa!');
+    } else throw new Error();
+  }).catch(() => {
+    div.innerHTML = '<span style="color:var(--accent3);font-size:12px">❌ Błąd połączenia</span>';
+    showToast('❌ Brak połączenia');
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  SHEETS
+// ══════════════════════════════════════════════════════
+async function pushToSheets(ev) {
+  if (!settings.gsUrl) return;
+  try { await fetch(settings.gsUrl, { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ action:'insert', row: evToRow(ev) }) }); }
+  catch(e) {}
+}
+async function updateToSheets(ev) {
+  if (!settings.gsUrl) return;
+  try { await fetch(settings.gsUrl, { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ action:'update', id:ev.id, row: evToRow(ev) }) }); }
+  catch(e) {}
+}
+function evToRow(ev) {
+  return [ev.id,ev.dataSgloszen,ev.godzinaSgloszen,ev.grupa,ev.droga,ev.km,ev.strona,
+    ev.gatunek,ev.osoba||'',ev.gpsRaw||'',
+    ev.latDeg||'',ev.latMin||'',ev.latSec||'',
+    ev.lngDeg||'',ev.lngMin||'',ev.lngSec||'',
+    ev.photoName||'',ev.godzinaDzialania||'',ev.virtualCol,ev.monthIndex||''];
+}
+
+// ══════════════════════════════════════════════════════
+//  DEMO DATA
+// ══════════════════════════════════════════════════════
+function addDemoData() {
+  const today = new Date().toISOString().slice(0,10);
+  const d = today.replace(/-/g,'');
+  events = [
+    { id:'WR-D1', dataSgloszen:today, godzinaSgloszen:'10:30', grupa:'Odolion',
+      droga:'DK62', km:'55+300', strona:'Prawa', gatunek:'Kot', osoba:'OD Odolion',
+      gpsRaw:null, lat:null, lng:null, latDeg:null,latMin:null,latSec:null,lngDeg:null,lngMin:null,lngSec:null,
+      photo:null, photoName:null, godzinaDzialania:'11:30',
+      virtualCol:`${d}_DK62_55+300_P_Kot`, step:2, monthIndex:1, ts:Date.now()-3600000 },
+    { id:'WR-D2', dataSgloszen:today, godzinaSgloszen:'11:00', grupa:'Odolion',
+      droga:'DK91', km:'255+900', strona:'Lewa', gatunek:'Sarna', osoba:'OD Odolion',
+      gpsRaw:'52.4012, 18.6578', lat:52.4012, lng:18.6578, latDeg:52,latMin:24,latSec:'4.32',
+      lngDeg:18,lngMin:39,lngSec:'28.08',
+      photo:null, photoName:`${d}_DK91_255+900_L_Sarna.jpg`, godzinaDzialania:'12:00',
+      virtualCol:`${d}_DK91_255+900_L_Sarna`, step:2, monthIndex:2, ts:Date.now()-2400000 },
+    { id:'WR-D3', dataSgloszen:today, godzinaSgloszen:'11:00', grupa:'Kowal',
+      droga:'DK67', km:'5+600', strona:'Prawa', gatunek:'Pies', osoba:'OD Kowal',
+      gpsRaw:null, lat:null, lng:null, latDeg:null,latMin:null,latSec:null,lngDeg:null,lngMin:null,lngSec:null,
+      photo:null, photoName:null, godzinaDzialania:'12:00',
+      virtualCol:`${d}_DK67_5+600_P_Pies`, step:1, monthIndex:1, ts:Date.now()-1200000 },
+    { id:'WR-D4', dataSgloszen:today, godzinaSgloszen:'11:00', grupa:'Kowal',
+      droga:'DK91', km:'51+300', strona:'Prawa', gatunek:'Pies', osoba:'Policja',
+      gpsRaw:null, lat:null, lng:null, latDeg:null,latMin:null,latSec:null,lngDeg:null,lngMin:null,lngSec:null,
+      photo:null, photoName:null, godzinaDzialania:'12:00',
+      virtualCol:`${d}_DK91_51+300_P_Pies`, step:1, monthIndex:2, ts:Date.now()-600000 },
+    { id:'WR-D5', dataSgloszen:today, godzinaSgloszen:'11:00', grupa:'Kowal',
+      droga:'DK91', km:'215+900', strona:'Lewa', gatunek:'Sarna', osoba:'FHU Jaroszewscy',
+      gpsRaw:null, lat:null, lng:null, latDeg:null,latMin:null,latSec:null,lngDeg:null,lngMin:null,lngSec:null,
+      photo:null, photoName:null, godzinaDzialania:'12:00',
+      virtualCol:`${d}_DK91_215+900_L_Sarna`, step:1, monthIndex:3, ts:Date.now()-300000 },
+  ];
+  saveLocal();
+}
+</script>
+</body>
+</html>
