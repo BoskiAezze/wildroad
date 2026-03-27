@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WildRoad">
+<meta name="theme-color" content="#0d1117">
+<title>WildRoad</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiV2lsZFJvYWQiLCJzaG9ydF9uYW1lIjoiV2lsZFJvYWQiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBkMTExNyIsInRoZW1lX2NvbG9yIjoiIzBkMTExNyJ9">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --card: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --green: #3fb950;
+  --blue: #58a6ff;
+  --orange: #f78166;
+  --gold: #e3b341;
+  --red: #f85149;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body {
+  height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',system-ui,sans-serif;
+  font-size:15px;
+  overscroll-behavior:none;
+  -webkit-font-smoothing:antialiased;
+}
+::-webkit-scrollbar { display:none; }
+body { scrollbar-width:none; }
+.mono { font-family:'DM Mono',monospace; }
+.app {
+  max-width:430px;
+  margin:0 auto;
+  min-height:100%;
+  position:relative;
+  overflow:hidden;
+}
+.screen {
+  display:none;
+  flex-direction:column;
+  min-height:100vh;
+  padding-bottom:calc(70px + var(--safe-bottom));
+  animation:fadeIn .25s ease;
+}
+.screen.active { display:flex; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+@keyframes scaleIn { from{transform:scale(.95);opacity:0} to{transform:scale(1);opacity:1} }
+
+/* Navbar */
+.navbar {
+  position:sticky; top:0; z-index:50;
+  padding:calc(var(--safe-top) + 8px) 16px 10px;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:12px;
+}
+.navbar .title { font-size:18px; font-weight:700; flex:1; }
+.navbar .subtitle { font-size:12px; color:var(--text2); }
+.navbar .clock { font-family:'DM Mono',monospace; font-size:13px; color:var(--text2); }
+.nav-btn {
+  width:40px; height:40px; border-radius:12px;
+  background:var(--card); border:1px solid var(--border);
+  color:var(--text); font-size:18px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex-shrink:0;
+}
+.nav-btn:active { transform:scale(.92); }
+.back-btn { font-size:22px; }
+
+/* Stats */
+.stats-bar {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;
+  padding:14px 16px 6px;
+}
+.stat-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:12px; text-align:center;
+}
+.stat-card .num { font-size:26px; font-weight:700; font-family:'DM Mono',monospace; }
+.stat-card .label { font-size:11px; color:var(--text2); margin-top:2px; }
+
+/* Date navigator */
+.date-nav {
+  display:flex; align-items:center; gap:6px;
+  padding:12px 16px 4px;
+}
+.date-nav .dn-arrow {
+  width:38px; height:38px; border-radius:50%;
+  background:var(--card); border:1px solid var(--border);
+  color:var(--text); font-size:18px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex-shrink:0;
+}
+.date-nav .dn-arrow:active { transform:scale(.9); background:var(--blue); color:#000; }
+.date-nav .dn-center {
+  flex:1; text-align:center; cursor:pointer;
+  padding:8px 4px; border-radius:12px;
+  transition:background .15s;
+}
+.date-nav .dn-center:active { background:var(--card); }
+.date-nav .dn-date { font-size:16px; font-weight:700; }
+.date-nav .dn-day { font-size:12px; color:var(--text2); margin-top:1px; }
+.date-nav .dn-today {
+  width:38px; height:38px; border-radius:50%;
+  background:var(--green); border:none;
+  color:#000; font-size:13px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex-shrink:0;
+}
+.date-nav .dn-today:active { transform:scale(.9); }
+/* Hidden native date input for calendar picker */
+.date-nav input[type=date] {
+  position:absolute; opacity:0; width:0; height:0; pointer-events:none;
+}
+
+/* Day chips */
+.day-chips {
+  display:flex; gap:6px; padding:8px 16px 4px;
+  overflow-x:auto; scroll-snap-type:x mandatory;
+}
+.day-chip {
+  flex-shrink:0; min-width:44px; padding:6px 10px; border-radius:12px;
+  background:var(--card); border:1px solid var(--border);
+  text-align:center; cursor:pointer;
+  scroll-snap-align:start; transition:all .15s;
+}
+.day-chip.active { background:var(--blue); color:#000; border-color:var(--blue); }
+.day-chip.today { border-color:var(--green); }
+.day-chip.has-events .dc-dot { background:var(--green); }
+.day-chip .dc-weekday { font-size:10px; color:var(--text2); text-transform:uppercase; }
+.day-chip.active .dc-weekday { color:rgba(0,0,0,.6); }
+.day-chip .dc-num { font-size:16px; font-weight:700; font-family:'DM Mono',monospace; }
+.day-chip .dc-dot {
+  width:5px; height:5px; border-radius:50%; margin:3px auto 0;
+  background:transparent;
+}
+
+/* Month chips */
+.month-chips {
+  display:flex; gap:8px; padding:6px 16px 4px;
+  overflow-x:auto; scroll-snap-type:x mandatory;
+}
+.month-chip {
+  flex-shrink:0; padding:6px 14px; border-radius:20px;
+  background:var(--card); border:1px solid var(--border);
+  font-size:12px; font-weight:500; cursor:pointer;
+  scroll-snap-align:start; white-space:nowrap;
+  transition:all .15s;
+}
+.month-chip.active { background:var(--blue); color:#000; border-color:var(--blue); font-weight:600; }
+
+/* Filter pills */
+.filter-pills {
+  display:flex; gap:8px; padding:10px 16px;
+  overflow-x:auto;
+}
+.pill {
+  flex-shrink:0; padding:7px 14px; border-radius:20px;
+  background:var(--card); border:1px solid var(--border);
+  font-size:13px; cursor:pointer; white-space:nowrap;
+  transition:all .15s;
+}
+.pill.active { background:var(--blue); color:#000; border-color:var(--blue); font-weight:600; }
+.pill:active { transform:scale(.95); }
+
+/* Report button */
+.report-btn {
+  margin:4px 16px 8px; padding:14px 18px; border-radius:14px;
+  background:var(--card); border:1px solid var(--border);
+  display:flex; align-items:center; gap:12px; cursor:pointer;
+  transition:all .15s;
+}
+.report-btn:active { transform:scale(.98); background:#1c2230; }
+.report-btn .icon { font-size:22px; }
+.report-btn .info { flex:1; }
+.report-btn .info .t { font-weight:600; font-size:14px; }
+.report-btn .info .s { font-size:12px; color:var(--text2); }
+.report-btn .arrow { color:var(--text2); font-size:18px; }
+
+/* Event cards */
+.event-cards { padding:0 16px 16px; display:flex; flex-direction:column; gap:10px; }
+.ev-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:14px; display:flex; gap:12px; cursor:pointer;
+  position:relative; overflow:hidden;
+  transition:all .15s; animation:scaleIn .2s ease;
+}
+.ev-card:active { transform:scale(.98); background:#1c2230; }
+.ev-card .bar {
+  position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:4px 0 0 4px;
+}
+.ev-card .bar.step1 { background:var(--blue); }
+.ev-card .bar.step2 { background:var(--green); }
+.ev-card .emoji-box {
+  width:42px; height:42px; border-radius:10px; background:rgba(255,255,255,.06);
+  display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0;
+}
+.ev-card .info { flex:1; min-width:0; }
+.ev-card .species { font-weight:600; font-size:15px; }
+.ev-card .road { font-family:'DM Mono',monospace; font-size:12px; color:var(--text2); margin-top:2px; }
+.ev-card .idx { font-family:'DM Mono',monospace; font-size:12px; color:var(--gold); margin-top:3px; }
+.ev-card .badge {
+  display:inline-block; padding:3px 8px; border-radius:8px;
+  font-size:11px; font-weight:600; margin-top:4px;
+}
+.ev-card .badge.pending { background:rgba(88,166,255,.15); color:var(--blue); }
+.ev-card .badge.complete { background:rgba(63,185,80,.15); color:var(--green); }
+.ev-card .meta { font-size:11px; color:var(--text2); margin-top:5px; }
+.ev-card .thumb {
+  width:44px; height:36px; border-radius:8px; object-fit:cover;
+  align-self:center; flex-shrink:0;
+}
+
+/* FAB */
+.fab {
+  position:fixed; bottom:calc(76px + var(--safe-bottom)); right:max(16px, calc((100vw - 430px)/2 + 16px));
+  width:58px; height:58px; border-radius:50%; z-index:40;
+  background:var(--green); color:#000; font-size:28px; font-weight:700;
+  border:none; box-shadow:0 4px 20px rgba(63,185,80,.4);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:transform .15s;
+}
+.fab:active { transform:scale(.88); }
+
+/* Tab bar */
+.tab-bar {
+  position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+  width:100%; max-width:430px; z-index:50;
+  background:var(--card); border-top:1px solid var(--border);
+  display:flex; padding:8px 0 calc(8px + var(--safe-bottom));
+}
+.tab {
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:6px; cursor:pointer; color:var(--text2); font-size:11px; font-weight:500;
+  border:none; background:none; transition:color .15s;
+}
+.tab.active { color:var(--blue); }
+.tab .ico { font-size:20px; }
+
+/* Sync indicator */
+.sync-bar {
+  padding:6px 16px; font-size:12px; color:var(--text2);
+  display:flex; align-items:center; gap:8px;
+}
+.sync-bar .dot {
+  width:8px; height:8px; border-radius:50%;
+}
+.sync-bar .dot.online { background:var(--green); }
+.sync-bar .dot.offline { background:var(--orange); }
+.sync-bar .dot.syncing { background:var(--gold); animation:pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* Forms */
+.form-section {
+  padding:14px 16px 6px;
+}
+.form-section .sec-title {
+  font-size:14px; font-weight:600; margin-bottom:10px;
+  display:flex; align-items:center; gap:8px;
+}
+.form-group { margin-bottom:14px; }
+.form-group label {
+  display:block; font-size:12px; color:var(--text2);
+  margin-bottom:5px; font-weight:500;
+}
+.form-input, .form-select {
+  width:100%; padding:12px 14px; border-radius:12px;
+  background:var(--card); border:1px solid var(--border);
+  color:var(--text); font-size:15px; font-family:'DM Sans',sans-serif;
+  outline:none; appearance:none; -webkit-appearance:none;
+}
+.form-select {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b949e' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+  padding-right:36px;
+}
+.form-input:focus, .form-select:focus { border-color:var(--blue); }
+
+/* Numeric input display */
+.num-input {
+  width:100%; padding:12px 14px; border-radius:12px;
+  background:var(--card); border:1px solid var(--border);
+  color:var(--text); font-size:15px; font-family:'DM Mono',monospace;
+  display:flex; align-items:center; justify-content:space-between;
+  cursor:pointer; min-height:46px;
+}
+.num-input .placeholder { color:var(--text2); }
+.num-input .kbd-icon { font-size:18px; }
+.num-input:active { border-color:var(--blue); }
+
+/* Toggle buttons (strona) */
+.toggle-grid {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;
+}
+.toggle-btn {
+  padding:12px 8px; border-radius:12px; text-align:center;
+  background:var(--card); border:1px solid var(--border);
+  color:var(--text); font-size:14px; cursor:pointer;
+  transition:all .15s;
+}
+.toggle-btn.active { background:var(--blue); color:#000; border-color:var(--blue); font-weight:600; }
+.toggle-btn:active { transform:scale(.95); }
+
+/* Preview box */
+.preview-box {
+  margin:0 16px 12px; padding:12px 16px; border-radius:12px;
+  background:rgba(63,185,80,.08); border:1px solid rgba(63,185,80,.2);
+  font-family:'DM Mono',monospace; font-size:13px; color:var(--green);
+  display:flex; align-items:center; gap:10px; word-break:break-all;
+}
+.preview-box .sparkle { font-size:18px; flex-shrink:0; }
+
+/* Action buttons */
+.action-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  padding:8px 16px 16px;
+}
+.btn {
+  padding:14px 16px; border-radius:14px; font-size:15px; font-weight:600;
+  border:none; cursor:pointer; text-align:center;
+  font-family:'DM Sans',sans-serif;
+  transition:all .15s; min-height:48px;
+}
+.btn:active { transform:scale(.96); }
+.btn-green { background:var(--green); color:#000; }
+.btn-blue { background:var(--blue); color:#000; }
+.btn-gray { background:var(--card); color:var(--text); border:1px solid var(--border); }
+.btn-red { background:transparent; color:var(--red); border:1px solid var(--border); }
+.btn-full { width:100%; display:block; }
+.btn-cancel {
+  padding:14px; text-align:center; color:var(--text2);
+  cursor:pointer; font-size:14px; margin:0 16px 16px;
+  border-radius:12px; border:1px solid var(--border);
+}
+.btn-cancel:active { background:var(--card); }
+
+/* Step indicator */
+.step-indicator {
+  display:flex; align-items:center; justify-content:center;
+  gap:12px; padding:16px;
+}
+.step-dot {
+  width:32px; height:32px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700;
+  border:2px solid var(--border); color:var(--text2);
+}
+.step-dot.active { border-color:var(--blue); background:var(--blue); color:#000; }
+.step-dot.done { border-color:var(--green); background:var(--green); color:#000; }
+.step-line { width:40px; height:2px; background:var(--border); }
+
+/* Detail view */
+.detail-hero {
+  text-align:center; padding:20px 16px 16px;
+}
+.detail-hero .emoji { font-size:42px; }
+.detail-hero .name { font-size:20px; font-weight:700; margin-top:6px; }
+.detail-hero .did { font-family:'DM Mono',monospace; font-size:13px; color:var(--text2); margin-top:3px; }
+.detail-hero .badges { display:flex; gap:8px; justify-content:center; margin-top:8px; }
+.detail-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  padding:0 16px 12px;
+}
+.detail-card {
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  padding:12px;
+}
+.detail-card .dl { font-size:11px; color:var(--text2); margin-bottom:3px; }
+.detail-card .dv { font-size:14px; font-weight:600; }
+.detail-full {
+  margin:0 16px 12px; padding:14px; border-radius:12px;
+  background:var(--card); border:1px solid var(--border);
+}
+.detail-full .dl { font-size:11px; color:var(--text2); margin-bottom:4px; }
+.detail-full .dv { font-family:'DM Mono',monospace; font-size:13px; color:var(--green); word-break:break-all; }
+.detail-photo {
+  margin:0 16px 12px; border-radius:14px; overflow:hidden;
+  border:1px solid var(--border);
+}
+.detail-photo img { width:100%; display:block; }
+.detail-photo .fname {
+  padding:10px 14px; font-family:'DM Mono',monospace;
+  font-size:12px; color:var(--text2); background:var(--card);
+}
+
+/* Step 2 photo upload */
+.upload-zone {
+  margin:0 16px 14px; border:2px dashed var(--border); border-radius:16px;
+  padding:30px; text-align:center; cursor:pointer;
+  transition:all .2s;
+}
+.upload-zone .uz-icon { font-size:36px; margin-bottom:8px; }
+.upload-zone .uz-text { font-size:14px; color:var(--text2); }
+.upload-zone.has-photo { border-color:var(--green); border-style:solid; padding:0; }
+.upload-zone.has-photo img { width:100%; border-radius:14px; display:block; }
+
+/* GPS tiles */
+.gps-grid {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;
+  padding:0 16px 14px;
+}
+.gps-tile {
+  background:var(--card); border:1px solid var(--border); border-radius:10px;
+  padding:10px; text-align:center;
+}
+.gps-tile .gl { font-size:10px; color:var(--text2); margin-bottom:3px; }
+.gps-tile .gv { font-family:'DM Mono',monospace; font-size:14px; font-weight:500; }
+
+/* Settings */
+.setting-group {
+  padding:14px 16px;
+}
+.setting-group .sg-title { font-size:14px; font-weight:600; margin-bottom:10px; }
+.setting-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 0; border-bottom:1px solid var(--border);
+}
+.setting-item:last-child { border:none; }
+.setting-item .si-label { font-size:14px; }
+.setting-item .si-desc { font-size:12px; color:var(--text2); }
+.toggle-switch {
+  width:48px; height:28px; border-radius:14px;
+  background:var(--border); position:relative; cursor:pointer;
+  transition:background .2s;
+}
+.toggle-switch.on { background:var(--green); }
+.toggle-switch .knob {
+  width:22px; height:22px; border-radius:50%; background:#fff;
+  position:absolute; top:3px; left:3px; transition:left .2s;
+}
+.toggle-switch.on .knob { left:23px; }
+.about-box {
+  margin:14px 16px; padding:20px; border-radius:14px;
+  background:var(--card); border:1px solid var(--border);
+  text-align:center;
+}
+.about-box .ab-emoji { font-size:36px; }
+.about-box .ab-name { font-size:18px; font-weight:700; margin-top:6px; }
+.about-box .ab-ver { font-size:13px; color:var(--text2); margin-top:4px; font-family:'DM Mono',monospace; }
+
+/* Numeric Keyboard Overlay */
+.kb-overlay {
+  position:fixed; inset:0; z-index:100;
+  background:rgba(0,0,0,.6); display:none;
+  align-items:flex-end; justify-content:center;
+}
+.kb-overlay.show { display:flex; }
+.kb-panel {
+  width:100%; max-width:430px;
+  background:var(--bg); border:1px solid var(--border);
+  border-radius:22px 22px 0 0;
+  padding:16px 16px calc(16px + var(--safe-bottom));
+  animation:slideUp .25s ease;
+}
+.kb-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px;
+}
+.kb-header .kb-label { font-size:14px; color:var(--text2); }
+.kb-header .kb-close {
+  width:32px; height:32px; border-radius:50%;
+  background:var(--card); border:1px solid var(--border);
+  color:var(--text); font-size:16px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+}
+.kb-display {
+  font-family:'DM Mono',monospace; font-size:32px; font-weight:500;
+  text-align:center; padding:14px; margin-bottom:12px;
+  background:var(--card); border-radius:14px; border:1px solid var(--border);
+  min-height:60px; display:flex; align-items:center; justify-content:center;
+  color:var(--text); word-break:break-all;
+}
+.kb-display:empty::after { content:'_'; color:var(--text2); animation:pulse 1s infinite; }
+.kb-prefixes {
+  display:flex; gap:8px; margin-bottom:12px; justify-content:center;
+}
+.kb-prefix {
+  padding:8px 16px; border-radius:10px;
+  background:var(--card); border:1px solid var(--border);
+  color:var(--gold); font-family:'DM Mono',monospace;
+  font-size:15px; font-weight:600; cursor:pointer;
+}
+.kb-prefix:active { transform:scale(.92); background:rgba(227,179,65,.1); }
+.kb-keys {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;
+}
+.kb-key {
+  padding:16px; border-radius:14px;
+  background:var(--card); border:1px solid var(--border);
+  color:var(--text); font-size:20px; font-weight:600;
+  text-align:center; cursor:pointer;
+  font-family:'DM Mono',monospace;
+  transition:all .1s;
+}
+.kb-key:active { transform:scale(.92); background:#1c2230; }
+.kb-key.del { color:var(--orange); }
+.kb-key.clr { color:var(--red); font-size:14px; }
+.kb-key.plus { color:var(--gold); }
+.kb-key.wide { grid-column:span 2; }
+.kb-confirm {
+  margin-top:10px; width:100%; padding:16px;
+  border-radius:14px; background:var(--green); color:#000;
+  font-size:16px; font-weight:700; border:none; cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
+.kb-confirm:active { transform:scale(.97); }
+
+/* Toast */
+.toast {
+  position:fixed; top:calc(var(--safe-top) + 16px);
+  left:50%; transform:translateX(-50%);
+  padding:12px 20px; border-radius:14px;
+  background:var(--card); border:1px solid var(--border);
+  font-size:14px; font-weight:500; z-index:200;
+  box-shadow:0 8px 30px rgba(0,0,0,.4);
+  animation:fadeIn .2s ease;
+  pointer-events:none; max-width:360px; text-align:center;
+}
+
+/* Empty state */
+.empty-state {
+  text-align:center; padding:40px 20px; color:var(--text2);
+}
+.empty-state .es-emoji { font-size:48px; margin-bottom:12px; }
+.empty-state .es-text { font-size:15px; }
+
+/* No photo placeholder */
+.no-photo {
+  margin:0 16px 12px; padding:24px; border-radius:14px;
+  background:var(--card); border:1px dashed var(--border);
+  text-align:center; color:var(--text2); font-size:14px;
+}
+
+/* Login screen */
+.login-screen {
+  position:fixed; inset:0; z-index:999;
+  background:var(--bg);
+  display:flex; align-items:center; justify-content:center;
+  padding:20px;
+}
+.login-screen.hidden { display:none; }
+.login-box {
+  width:100%; max-width:340px; text-align:center;
+}
+.login-box .lb-emoji { font-size:64px; margin-bottom:16px; }
+.login-box .lb-title { font-size:24px; font-weight:700; margin-bottom:6px; }
+.login-box .lb-sub { font-size:14px; color:var(--text2); margin-bottom:28px; }
+.pin-dots {
+  display:flex; justify-content:center; gap:14px; margin-bottom:28px;
+}
+.pin-dot {
+  width:18px; height:18px; border-radius:50%;
+  border:2px solid var(--border); transition:all .2s;
+}
+.pin-dot.filled { background:var(--blue); border-color:var(--blue); }
+.pin-dot.wrong { background:var(--red); border-color:var(--red); animation:shake .4s; }
+@keyframes shake { 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)} }
+.pin-keys {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;
+  max-width:260px; margin:0 auto;
+}
+.pin-key {
+  width:72px; height:72px; border-radius:50%;
+  background:var(--card); border:1px solid var(--border);
+  color:var(--text); font-size:26px; font-weight:600;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-family:'DM Mono',monospace;
+  transition:all .1s; justify-self:center;
+}
+.pin-key:active { transform:scale(.88); background:var(--blue); color:#000; }
+.pin-key.del { font-size:20px; color:var(--orange); }
+.pin-key.empty { visibility:hidden; }
+</style>
+</head>
+<body>
+<!-- ==================== LOGIN SCREEN ==================== -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="lb-emoji">&#x1F98C;&#x1F512;</div>
+    <div class="lb-title">WildRoad</div>
+    <div class="lb-sub">Wprowad&#x17A; PIN aby kontynuowa&#x107;</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="pin-keys">
+      <div class="pin-key" onclick="pinDigit('1')">1</div>
+      <div class="pin-key" onclick="pinDigit('2')">2</div>
+      <div class="pin-key" onclick="pinDigit('3')">3</div>
+      <div class="pin-key" onclick="pinDigit('4')">4</div>
+      <div class="pin-key" onclick="pinDigit('5')">5</div>
+      <div class="pin-key" onclick="pinDigit('6')">6</div>
+      <div class="pin-key" onclick="pinDigit('7')">7</div>
+      <div class="pin-key" onclick="pinDigit('8')">8</div>
+      <div class="pin-key" onclick="pinDigit('9')">9</div>
+      <div class="pin-key empty"></div>
+      <div class="pin-key" onclick="pinDigit('0')">0</div>
+      <div class="pin-key del" onclick="pinDelete()">&#x232B;</div>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="app" style="display:none">
+
+<!-- ==================== SCREEN 1: LIST ==================== -->
+<div class="screen active" id="screen-list">
+  <div class="navbar">
+    <div class="title">&#x1F98C; WildRoad</div>
+    <div class="clock mono" id="clock"></div>
+    <button class="nav-btn" onclick="showScreen('screen-settings')" aria-label="Ustawienia">&#x2699;&#xFE0F;</button>
+  </div>
+
+  <div class="sync-bar" id="sync-bar">
+    <div class="dot online" id="sync-dot"></div>
+    <span id="sync-text">Online</span>
+  </div>
+
+  <!-- Date navigator -->
+  <div class="date-nav">
+    <div class="dn-arrow" onclick="shiftDate(-1)">&#x2039;</div>
+    <div class="dn-center" onclick="openDatePicker()">
+      <div class="dn-date" id="dn-date">27 marca 2026</div>
+      <div class="dn-day" id="dn-day">Pi&#x105;tek</div>
+    </div>
+    <div class="dn-arrow" onclick="shiftDate(1)">&#x203A;</div>
+    <div class="dn-today" onclick="goToday()" title="Dzi&#x15B;">&#x2302;</div>
+    <input type="date" id="date-picker-input" onchange="onDatePicked(this.value)">
+  </div>
+
+  <!-- Day chips (horizontal scroll) -->
+  <div class="day-chips" id="day-chips"></div>
+
+  <!-- Month chips -->
+  <div class="month-chips" id="month-chips"></div>
+
+  <div class="stats-bar">
+    <div class="stat-card"><div class="num" id="stat-total">0</div><div class="label" id="stat-total-label">Dzie&#x144;</div></div>
+    <div class="stat-card"><div class="num" id="stat-odolion">0</div><div class="label">Odolion</div></div>
+    <div class="stat-card"><div class="num" id="stat-kowal">0</div><div class="label">Kowal</div></div>
+  </div>
+
+  <div class="filter-pills" id="filter-pills">
+    <div class="pill active" data-filter="all" onclick="setFilter('all',this)">Wszystkie</div>
+    <div class="pill" data-filter="pending" onclick="setFilter('pending',this)">&#x23F3; Bez foto</div>
+    <div class="pill" data-filter="complete" onclick="setFilter('complete',this)">&#x2705; Kompletne</div>
+    <div class="pill" data-filter="odolion" onclick="setFilter('odolion',this)">Odolion</div>
+    <div class="pill" data-filter="kowal" onclick="setFilter('kowal',this)">Kowal</div>
+  </div>
+
+  <div class="report-btn" onclick="copyReport()">
+    <div class="icon">&#x1F4CB;</div>
+    <div class="info">
+      <div class="t" id="report-btn-title">Kopiuj Raport Dzienny</div>
+      <div class="s" id="report-btn-sub">Skopiuj podsumowanie do schowka</div>
+    </div>
+    <div class="arrow">&#x203A;</div>
+  </div>
+
+  <div class="event-cards" id="event-cards"></div>
+
+  <button class="fab" onclick="openNewForm()" aria-label="Dodaj">+</button>
+
+  <div class="tab-bar">
+    <div class="tab active" onclick="showScreen('screen-list')"><div class="ico">&#x1F4CB;</div>Rejestr</div>
+    <div class="tab" onclick="showScreen('screen-settings')"><div class="ico">&#x2699;&#xFE0F;</div>Ustawienia</div>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 2: FORM ==================== -->
+<div class="screen" id="screen-form">
+  <div class="navbar">
+    <button class="nav-btn back-btn" onclick="goBack('screen-list')" aria-label="Wstecz">&#x2039;</button>
+    <div class="title">Nowe zg&#x142;oszenie</div>
+  </div>
+
+  <div class="step-indicator">
+    <div class="step-dot active" id="form-step1-dot">1</div>
+    <div class="step-line"></div>
+    <div class="step-dot" id="form-step2-dot">2</div>
+  </div>
+
+  <div class="form-section">
+    <div class="sec-title">&#x1F4C5; Czas Zdarzenia</div>
+    <div class="form-group">
+      <label>Data</label>
+      <input type="date" class="form-input" id="f-date">
+    </div>
+    <div class="form-group">
+      <label>Godzina</label>
+      <select class="form-select" id="f-time"></select>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="sec-title">&#x1F5FA;&#xFE0F; Lokalizacja</div>
+    <div class="form-group">
+      <label>Grupa *</label>
+      <select class="form-select" id="f-grupa">
+        <option value="">Wybierz grup&#x119;...</option>
+        <option value="Odolion">Odolion</option>
+        <option value="Kowal">Kowal</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Numer Drogi</label>
+      <div class="num-input" id="f-droga-box" onclick="openKeyboard('droga')">
+        <span class="placeholder" id="f-droga-display">np. DK62</span>
+        <span class="kbd-icon">&#x2328;&#xFE0F;</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Km / Pikieta&#x17C;</label>
+      <div class="num-input" id="f-km-box" onclick="openKeyboard('km')">
+        <span class="placeholder" id="f-km-display">55+400</span>
+        <span class="kbd-icon">&#x2328;&#xFE0F;</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Strona</label>
+      <div class="toggle-grid">
+        <div class="toggle-btn" data-strona="Lewa" onclick="setStrona(this)">&#x2B05;&#xFE0F; Lewa</div>
+        <div class="toggle-btn" data-strona="O&#x15B;" onclick="setStrona(this)">&#x21CC; O&#x15B;</div>
+        <div class="toggle-btn" data-strona="Prawa" onclick="setStrona(this)">Prawa &#x27A1;&#xFE0F;</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="sec-title">&#x1F98A; Zwierz&#x119; &amp; Zg&#x142;aszaj&#x105;cy</div>
+    <div class="form-group">
+      <label>Gatunek</label>
+      <select class="form-select" id="f-gatunek">
+        <option value="">Wybierz gatunek...</option>
+        <option>Sarna</option><option>Dzik</option><option>Jele&#x144;</option>
+        <option>&#x141;o&#x15B;</option><option>Lis</option><option>Jenot</option>
+        <option>Borsuk</option><option>Zaj&#x105;c</option><option>Je&#x17C;</option>
+        <option>Kuna</option><option>Norka</option><option>Wiewi&#xF3;rka</option>
+        <option>Ptak</option><option>Pies</option><option>Kot</option>
+        <option>Wilk</option><option>Ry&#x15B;</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Osoba Zg&#x142;aszaj&#x105;ca</label>
+      <select class="form-select" id="f-osoba" onchange="toggleCustomOsoba()">
+        <option value="">Wybierz...</option>
+        <option>OD Kowal</option><option>OD Odolion</option>
+        <option>FHU Jaroszewscy</option><option>PID</option>
+        <option>Policja</option><option value="__custom">Inna/Inny...</option>
+      </select>
+    </div>
+    <div class="form-group" id="f-osoba-custom-wrap" style="display:none">
+      <label>Podaj nazw&#x119;</label>
+      <input type="text" class="form-input" id="f-osoba-custom" placeholder="Imi&#x119; / nazwa...">
+    </div>
+  </div>
+
+  <div class="preview-box" id="preview-box">
+    <span class="sparkle">&#x2728;</span>
+    <span id="preview-text">--</span>
+  </div>
+
+  <div class="action-grid">
+    <button class="btn btn-green" onclick="saveStep1('list')">&#x1F4BE; Zapisz i dodaj kolejne</button>
+    <button class="btn btn-blue" onclick="saveStep1('photo')">&#x1F4F7; Zapisz i zr&#xF3;b zdj&#x119;cie</button>
+  </div>
+  <div class="btn-cancel" onclick="goBack('screen-list')">Anuluj</div>
+</div>
+
+<!-- ==================== SCREEN 3: DETAIL ==================== -->
+<div class="screen" id="screen-detail">
+  <div class="navbar">
+    <button class="nav-btn back-btn" onclick="goBack('screen-list')" aria-label="Wstecz">&#x2039;</button>
+    <div style="flex:1">
+      <div class="title" id="det-title">Szczeg&#xF3;&#x142;y</div>
+      <div class="subtitle mono" id="det-id"></div>
+    </div>
+    <button class="nav-btn" id="det-photo-btn" onclick="openStep2FromDetail()" aria-label="Zdj&#x119;cie">&#x1F4F7;</button>
+  </div>
+  <div id="detail-content"></div>
+</div>
+
+<!-- ==================== SCREEN 4: STEP 2 ==================== -->
+<div class="screen" id="screen-step2">
+  <div class="navbar">
+    <button class="nav-btn back-btn" onclick="goBack('screen-detail')" aria-label="Wstecz">&#x2039;</button>
+    <div class="title">Dokumentacja terenu</div>
+  </div>
+
+  <div class="step-indicator">
+    <div class="step-dot done">&#x2713;</div>
+    <div class="step-line"></div>
+    <div class="step-dot active">2</div>
+  </div>
+
+  <div class="form-section">
+    <div class="sec-title">&#x1F4F7; Zdj&#x119;cie</div>
+  </div>
+
+  <div class="upload-zone" id="upload-zone" onclick="document.getElementById('photo-input').click()">
+    <div class="uz-icon">&#x1F4F7;</div>
+    <div class="uz-text">Stuknij aby zrobi&#x107; zdj&#x119;cie</div>
+  </div>
+  <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+
+  <div class="preview-box" id="s2-filename" style="display:none">
+    <span class="sparkle">&#x1F4C4;</span>
+    <span id="s2-filename-text"></span>
+  </div>
+
+  <div class="form-section">
+    <div class="sec-title">&#x1F4CD; GPS</div>
+  </div>
+  <div class="detail-full" id="s2-gps-raw" style="margin-bottom:12px">
+    <div class="dl">GPS Raw</div>
+    <div class="dv" id="s2-gps-text">Oczekiwanie...</div>
+  </div>
+  <div class="gps-grid" id="s2-gps-grid">
+    <div class="gps-tile"><div class="gl">Szer. &#xB0;</div><div class="gv" id="s2-latD">--</div></div>
+    <div class="gps-tile"><div class="gl">Szer. '</div><div class="gv" id="s2-latM">--</div></div>
+    <div class="gps-tile"><div class="gl">Szer. "</div><div class="gv" id="s2-latS">--</div></div>
+    <div class="gps-tile"><div class="gl">D&#x142;ug. &#xB0;</div><div class="gv" id="s2-lngD">--</div></div>
+    <div class="gps-tile"><div class="gl">D&#x142;ug. '</div><div class="gv" id="s2-lngM">--</div></div>
+    <div class="gps-tile"><div class="gl">D&#x142;ug. "</div><div class="gv" id="s2-lngS">--</div></div>
+  </div>
+
+  <div style="padding:0 16px 6px">
+    <button class="btn btn-gray btn-full" onclick="refreshGPS()" style="font-size:14px">&#x1F504; Od&#x15B;wie&#x17C; GPS</button>
+  </div>
+
+  <div class="form-section">
+    <div class="sec-title">&#x23F1;&#xFE0F; Godzina Podj&#x119;cia Dzia&#x142;ania</div>
+    <div class="detail-full">
+      <div class="dv mono" id="s2-action-time">--:--:--</div>
+    </div>
+  </div>
+
+  <div style="padding:12px 16px 8px">
+    <button class="btn btn-blue btn-full" onclick="saveStep2(true)">&#x1F4BE; Zapisz Dokumentacj&#x119;</button>
+  </div>
+  <div style="padding:0 16px 20px">
+    <button class="btn btn-gray btn-full" onclick="saveStep2(false)">Zapisz bez zdj&#x119;cia (tylko GPS)</button>
+  </div>
+</div>
+
+<!-- ==================== SCREEN 5: SETTINGS ==================== -->
+<div class="screen" id="screen-settings">
+  <div class="navbar">
+    <button class="nav-btn back-btn" onclick="goBack('screen-list')" aria-label="Wstecz">&#x2039;</button>
+    <div class="title">Ustawienia</div>
+  </div>
+
+  <div class="setting-group">
+    <div class="sg-title">&#x1F310; Google Sheets Sync</div>
+    <div class="form-group">
+      <label>URL Apps Script Web App</label>
+      <input type="url" class="form-input" id="s-gsurl" placeholder="https://script.google.com/macros/s/...">
+    </div>
+    <div class="form-group">
+      <label>ID Arkusza Google</label>
+      <input type="text" class="form-input" id="s-sheetid" placeholder="1BxiM...">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <button class="btn btn-blue" onclick="testConnection()">&#x1F50C; Testuj</button>
+      <button class="btn btn-green" onclick="manualSync()">&#x1F504; Synchronizuj</button>
+    </div>
+    <div id="conn-status" style="font-size:13px;color:var(--text2);min-height:20px"></div>
+  </div>
+
+  <div class="setting-group">
+    <div class="sg-title">&#x2699;&#xFE0F; Opcje</div>
+    <div class="setting-item">
+      <div><div class="si-label">Auto-sync online</div><div class="si-desc">Synchronizuj przy po&#x142;&#x105;czeniu</div></div>
+      <div class="toggle-switch on" id="tog-autosync" onclick="toggleSetting(this,'autoSync')"><div class="knob"></div></div>
+    </div>
+    <div class="setting-item">
+      <div><div class="si-label">GPS automatyczny</div><div class="si-desc">Pobieraj GPS w Kroku 2</div></div>
+      <div class="toggle-switch on" id="tog-gps" onclick="toggleSetting(this,'autoGPS')"><div class="knob"></div></div>
+    </div>
+  </div>
+
+  <div class="about-box">
+    <div class="ab-emoji">&#x1F98C;&#x1F6E3;&#xFE0F;</div>
+    <div class="ab-name">WildRoad</div>
+    <div class="ab-ver">v2.0.0 &middot; PWA + Bidirectional Sync</div>
+  </div>
+
+  <div style="padding:16px">
+    <button class="btn btn-red btn-full" onclick="clearAllData()">&#x1F5D1;&#xFE0F; Wyczy&#x15B;&#x107; dane lokalne</button>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab" onclick="showScreen('screen-list')"><div class="ico">&#x1F4CB;</div>Rejestr</div>
+    <div class="tab active" onclick="showScreen('screen-settings')"><div class="ico">&#x2699;&#xFE0F;</div>Ustawienia</div>
+  </div>
+</div>
+
+<!-- ==================== NUMERIC KEYBOARD ==================== -->
+<div class="kb-overlay" id="kb-overlay" onclick="if(event.target===this)closeKeyboard()">
+  <div class="kb-panel">
+    <div class="kb-header">
+      <span class="kb-label" id="kb-label">Numer Drogi</span>
+      <div class="kb-close" onclick="closeKeyboard()">&#x2715;</div>
+    </div>
+    <div class="kb-display" id="kb-display"></div>
+    <div class="kb-prefixes" id="kb-prefixes"></div>
+    <div class="kb-keys" id="kb-keys"></div>
+    <button class="kb-confirm" onclick="confirmKeyboard()">&#x2713; Zatwierd&#x17A;</button>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+'use strict';
+
+// ============================================================
+// STATE
+// ============================================================
+let events = [];
+let settings = { gsUrl:'', sheetId:'', autoSync:true, autoGPS:true };
+let currentFilter = 'all';
+let currentMonth = '';
+let currentDate = ''; // YYYY-MM-DD, pusty = caly miesiac
+let selectedStrona = '';
+let editingId = null;
+let kbField = null;
+let kbValue = '';
+let formDroga = '';
+let formKm = '';
+let currentGPS = null;
+let photoDataURL = null;
+let actionTime = null;
+let syncQueue = [];
+let isSyncing = false;
+let lastSyncTimestamp = 0;
+
+const MONTHS_PL = ['','Stycze\u0144','Luty','Marzec','Kwiecie\u0144','Maj','Czerwiec','Lipiec','Sierpie\u0144','Wrzesie\u0144','Pa\u017adziernik','Listopad','Grudzie\u0144'];
+
+// ============================================================
+// PIN LOGIN
+// ============================================================
+const APP_PIN = '1234';
+let pinInput = '';
+
+function pinDigit(d) {
+  if(pinInput.length >= 4) return;
+  pinInput += d;
+  updatePinDots();
+  if(pinInput.length === 4) {
+    setTimeout(() => {
+      if(pinInput === APP_PIN) {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('app').style.display = '';
+        sessionStorage.setItem('wr_auth','1');
+      } else {
+        document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('wrong'));
+        setTimeout(() => {
+          pinInput = '';
+          updatePinDots();
+          document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('wrong'));
+        }, 500);
+      }
+    }, 150);
+  }
+}
+function pinDelete() {
+  pinInput = pinInput.slice(0,-1);
+  updatePinDots();
+}
+function updatePinDots() {
+  document.querySelectorAll('.pin-dot').forEach((dot, i) => {
+    dot.classList.toggle('filled', i < pinInput.length);
+  });
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Skip login if already authenticated this session
+  if(sessionStorage.getItem('wr_auth') === '1') {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').style.display = '';
+  }
+
+  loadLocal();
+  loadSettings();
+  initTimeSelect();
+  setDefaultDate();
+  initDate();
+  if(events.length === 0) addDemoData();
+  renderList();
+  updateClock();
+  setInterval(updateClock, 1000);
+  updatePreview();
+  updateSyncStatus();
+
+  // Online/offline listeners
+  window.addEventListener('online', () => { updateSyncStatus(); if(settings.autoSync) { doSync(); uploadPendingPhotos(); } });
+  window.addEventListener('offline', updateSyncStatus);
+
+  // Form change listeners for preview
+  ['f-date','f-grupa','f-gatunek','f-osoba'].forEach(id => {
+    document.getElementById(id).addEventListener('change', updatePreview);
+  });
+
+  // Auto sync on load if online
+  if(navigator.onLine && settings.autoSync && settings.gsUrl) {
+    setTimeout(doSync, 1500);
+  }
+});
+
+// ============================================================
+// STORAGE
+// ============================================================
+function loadLocal() {
+  try { events = JSON.parse(localStorage.getItem('wr_events') || '[]'); } catch(e) { events = []; }
+  try { syncQueue = JSON.parse(localStorage.getItem('wr_sync_queue') || '[]'); } catch(e) { syncQueue = []; }
+  lastSyncTimestamp = parseInt(localStorage.getItem('wr_last_sync') || '0');
+}
+function saveLocal() {
+  localStorage.setItem('wr_events', JSON.stringify(events));
+  localStorage.setItem('wr_sync_queue', JSON.stringify(syncQueue));
+  localStorage.setItem('wr_last_sync', String(lastSyncTimestamp));
+}
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('wr_settings') || '{}');
+    settings = { ...settings, ...s };
+  } catch(e) {}
+  document.getElementById('s-gsurl').value = settings.gsUrl || '';
+  document.getElementById('s-sheetid').value = settings.sheetId || '';
+  updateToggleUI('tog-autosync', settings.autoSync);
+  updateToggleUI('tog-gps', settings.autoGPS);
+}
+function saveSettings() {
+  settings.gsUrl = document.getElementById('s-gsurl').value.trim();
+  settings.sheetId = document.getElementById('s-sheetid').value.trim();
+  localStorage.setItem('wr_settings', JSON.stringify(settings));
+}
+function toggleSetting(el, key) {
+  settings[key] = !settings[key];
+  updateToggleUI(el.id, settings[key]);
+  saveSettings();
+}
+function updateToggleUI(id, val) {
+  const el = typeof id === 'string' ? document.getElementById(id) : id;
+  if(el) el.classList.toggle('on', val);
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // Update tabs
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  if(id === 'screen-settings') {
+    document.querySelectorAll('.tab')[1]?.classList.add('active');
+    saveSettings();
+  } else {
+    document.querySelectorAll('.tab')[0]?.classList.add('active');
+  }
+  window.scrollTo(0,0);
+}
+function goBack(to) { showScreen(to); }
+
+// ============================================================
+// CLOCK
+// ============================================================
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent = h + ':' + m;
+}
+
+// ============================================================
+// EMOJI MAP
+// ============================================================
+function getEmoji(species) {
+  const s = (species||'').toLowerCase();
+  const map = {
+    sarna:'\u{1F98C}', jele\u0144:'\u{1F98C}', '\u0142o\u015b':'\u{1FACE}', dzik:'\u{1F417}',
+    lis:'\u{1F98A}', jenot:'\u{1F99D}', borsuk:'\u{1F9A1}', 'zaj\u0105c':'\u{1F407}',
+    'je\u017c':'\u{1F994}', kuna:'\u{1F9A6}', norka:'\u{1F9A6}', 'wiewi\u00f3rka':'\u{1F43F}\uFE0F',
+    ptak:'\u{1F426}', pies:'\u{1F415}', kot:'\u{1F431}', wilk:'\u{1F43A}', 'ry\u015b':'\u{1F406}'
+  };
+  return map[s] || '\u{1F43E}';
+}
+
+// ============================================================
+// MONTH INDEX
+// ============================================================
+function calcMonthIndex(date) {
+  const ym = date.slice(0,7);
+  return events.filter(e => e.dataSgloszen && e.dataSgloszen.slice(0,7) === ym).length + 1;
+}
+
+// ============================================================
+// VIRTUAL COLUMN
+// ============================================================
+function buildVirtualCol(date, droga, km, strona, gatunek) {
+  const d = (date||'').replace(/-/g,'');
+  const dd = d.slice(6,8) + d.slice(4,6) + d.slice(0,4);
+  const sc = (strona||'')[0] === 'L' ? 'L' : (strona||'')[0] === 'O' ? 'O' : (strona||'')[0] === 'P' ? 'P' : '';
+  return [dd, droga||'', km||'', sc, gatunek||''].filter(Boolean).join('_');
+}
+
+// ============================================================
+// FORM HELPERS
+// ============================================================
+function initTimeSelect() {
+  const sel = document.getElementById('f-time');
+  sel.innerHTML = '';
+  for(let h=0; h<24; h++) {
+    for(let m=0; m<60; m+=30) {
+      const val = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+      sel.innerHTML += `<option value="${val}">${val}</option>`;
+    }
+  }
+  // Set nearest slot
+  const now = new Date();
+  const mins = now.getMinutes();
+  const slot = mins < 15 ? '00' : mins < 45 ? '30' : '00';
+  let hr = mins < 45 ? now.getHours() : now.getHours() + 1;
+  if(hr > 23) hr = 0;
+  sel.value = String(hr).padStart(2,'0') + ':' + slot;
+}
+
+function setDefaultDate() {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth()+1).padStart(2,'0');
+  const d = String(today.getDate()).padStart(2,'0');
+  document.getElementById('f-date').value = `${y}-${m}-${d}`;
+}
+
+function toggleCustomOsoba() {
+  const sel = document.getElementById('f-osoba');
+  const wrap = document.getElementById('f-osoba-custom-wrap');
+  wrap.style.display = sel.value === '__custom' ? 'block' : 'none';
+}
+
+function setStrona(el) {
+  document.querySelectorAll('.toggle-btn[data-strona]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedStrona = el.dataset.strona;
+  updatePreview();
+}
+
+function updatePreview() {
+  const date = document.getElementById('f-date').value;
+  const droga = formDroga;
+  const km = formKm;
+  const gatunek = document.getElementById('f-gatunek').value;
+  const vc = buildVirtualCol(date, droga, km, selectedStrona, gatunek);
+  document.getElementById('preview-text').textContent = vc || '--';
+}
+
+function resetForm() {
+  setDefaultDate();
+  initTimeSelect();
+  document.getElementById('f-grupa').value = '';
+  formDroga = ''; formKm = '';
+  document.getElementById('f-droga-display').textContent = 'np. DK62';
+  document.getElementById('f-droga-display').className = 'placeholder';
+  document.getElementById('f-km-display').textContent = '55+400';
+  document.getElementById('f-km-display').className = 'placeholder';
+  selectedStrona = '';
+  document.querySelectorAll('.toggle-btn[data-strona]').forEach(b => b.classList.remove('active'));
+  document.getElementById('f-gatunek').value = '';
+  document.getElementById('f-osoba').value = '';
+  document.getElementById('f-osoba-custom-wrap').style.display = 'none';
+  document.getElementById('f-osoba-custom').value = '';
+  updatePreview();
+}
+
+function openNewForm() {
+  resetForm();
+  editingId = null;
+  showScreen('screen-form');
+}
+
+// ============================================================
+// NUMERIC KEYBOARD
+// ============================================================
+function openKeyboard(field) {
+  kbField = field;
+  kbValue = field === 'droga' ? formDroga : formKm;
+  const overlay = document.getElementById('kb-overlay');
+  const label = document.getElementById('kb-label');
+  const display = document.getElementById('kb-display');
+  const prefixes = document.getElementById('kb-prefixes');
+  const keysDiv = document.getElementById('kb-keys');
+
+  label.textContent = field === 'droga' ? 'Numer Drogi' : 'Km / Pikieta\u017c';
+  display.textContent = kbValue;
+
+  if(field === 'droga') {
+    prefixes.innerHTML = ['DK','DW','S','A','GP'].map(p =>
+      `<div class="kb-prefix" onclick="kbPrefix('${p}')">${p}</div>`
+    ).join('');
+    prefixes.style.display = 'flex';
+    keysDiv.innerHTML = `
+      <div class="kb-key" onclick="kbDigit('7')">7</div>
+      <div class="kb-key" onclick="kbDigit('8')">8</div>
+      <div class="kb-key" onclick="kbDigit('9')">9</div>
+      <div class="kb-key" onclick="kbDigit('4')">4</div>
+      <div class="kb-key" onclick="kbDigit('5')">5</div>
+      <div class="kb-key" onclick="kbDigit('6')">6</div>
+      <div class="kb-key" onclick="kbDigit('1')">1</div>
+      <div class="kb-key" onclick="kbDigit('2')">2</div>
+      <div class="kb-key" onclick="kbDigit('3')">3</div>
+      <div class="kb-key clr" onclick="kbClear()">CLR</div>
+      <div class="kb-key" onclick="kbDigit('0')">0</div>
+      <div class="kb-key del" onclick="kbDelete()">\u232B</div>
+    `;
+  } else {
+    prefixes.style.display = 'none';
+    keysDiv.innerHTML = `
+      <div class="kb-key" onclick="kbDigit('7')">7</div>
+      <div class="kb-key" onclick="kbDigit('8')">8</div>
+      <div class="kb-key" onclick="kbDigit('9')">9</div>
+      <div class="kb-key" onclick="kbDigit('4')">4</div>
+      <div class="kb-key" onclick="kbDigit('5')">5</div>
+      <div class="kb-key" onclick="kbDigit('6')">6</div>
+      <div class="kb-key" onclick="kbDigit('1')">1</div>
+      <div class="kb-key" onclick="kbDigit('2')">2</div>
+      <div class="kb-key" onclick="kbDigit('3')">3</div>
+      <div class="kb-key plus" onclick="kbDigit('+')">+</div>
+      <div class="kb-key" onclick="kbDigit('0')">0</div>
+      <div class="kb-key del" onclick="kbDelete()">\u232B</div>
+      <div class="kb-key clr" onclick="kbClear()">CLR</div>
+      <div class="kb-key wide" onclick="kbDigit('000')">000</div>
+    `;
+  }
+  overlay.classList.add('show');
+}
+
+function closeKeyboard() { document.getElementById('kb-overlay').classList.remove('show'); }
+function kbDigit(d) { kbValue += d; document.getElementById('kb-display').textContent = kbValue; }
+function kbDelete() { kbValue = kbValue.slice(0,-1); document.getElementById('kb-display').textContent = kbValue; }
+function kbClear() { kbValue = ''; document.getElementById('kb-display').textContent = ''; }
+function kbPrefix(p) { kbValue = p; document.getElementById('kb-display').textContent = kbValue; }
+
+function confirmKeyboard() {
+  if(kbField === 'droga') {
+    formDroga = kbValue;
+    const el = document.getElementById('f-droga-display');
+    el.textContent = kbValue || 'np. DK62';
+    el.className = kbValue ? '' : 'placeholder';
+  } else {
+    formKm = kbValue;
+    const el = document.getElementById('f-km-display');
+    el.textContent = kbValue || '55+400';
+    el.className = kbValue ? '' : 'placeholder';
+  }
+  closeKeyboard();
+  updatePreview();
+}
+
+// ============================================================
+// GPS
+// ============================================================
+function getGPS() {
+  return new Promise((resolve) => {
+    if(!navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const dms = ddToDms(lat, lng);
+        currentGPS = { lat, lng, raw: lat.toFixed(6)+', '+lng.toFixed(6), ...dms };
+        resolve(currentGPS);
+      },
+      () => resolve(null),
+      { enableHighAccuracy:true, timeout:12000, maximumAge:0 }
+    );
+  });
+}
+
+function ddToDms(latDD, lngDD) {
+  function convert(dd) {
+    const abs = Math.abs(dd);
+    const deg = Math.floor(abs);
+    const minFull = (abs - deg) * 60;
+    const min = Math.floor(minFull);
+    const sec = ((minFull - min) * 60).toFixed(4);
+    return { deg, min, sec };
+  }
+  const lt = convert(latDD);
+  const ln = convert(lngDD);
+  return {
+    latDeg:lt.deg, latMin:lt.min, latSec:lt.sec,
+    lngDeg:ln.deg, lngMin:ln.min, lngSec:ln.sec
+  };
+}
+
+function refreshGPS() {
+  document.getElementById('s2-gps-text').textContent = 'Pobieranie...';
+  getGPS().then(g => updateGPSUI(g));
+}
+
+function updateGPSUI(g) {
+  if(!g) {
+    document.getElementById('s2-gps-text').textContent = 'Brak GPS';
+    return;
+  }
+  document.getElementById('s2-gps-text').textContent = g.raw;
+  document.getElementById('s2-latD').textContent = g.latDeg + '\u00b0';
+  document.getElementById('s2-latM').textContent = g.latMin + "'";
+  document.getElementById('s2-latS').textContent = g.latSec + '"';
+  document.getElementById('s2-lngD').textContent = g.lngDeg + '\u00b0';
+  document.getElementById('s2-lngM').textContent = g.lngMin + "'";
+  document.getElementById('s2-lngS').textContent = g.lngSec + '"';
+}
+
+// ============================================================
+// PHOTO HANDLING
+// ============================================================
+function handlePhoto(input) {
+  const file = input.files[0];
+  if(!file) return;
+
+  // Compress photo
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const MAX = 1200;
+      let w = img.width, h = img.height;
+      if(w > MAX || h > MAX) {
+        if(w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      photoDataURL = canvas.toDataURL('image/jpeg', 0.7);
+
+      // Update UI
+      const zone = document.getElementById('upload-zone');
+      zone.classList.add('has-photo');
+      zone.innerHTML = `<img src="${photoDataURL}" alt="Zdj\u0119cie">`;
+
+      // Set action time
+      const now = new Date();
+      actionTime = String(now.getHours()).padStart(2,'0') + ':' +
+                   String(now.getMinutes()).padStart(2,'0') + ':' +
+                   String(now.getSeconds()).padStart(2,'0');
+      document.getElementById('s2-action-time').textContent = actionTime;
+
+      // Show filename
+      const ev = events.find(e => e.id === editingId);
+      if(ev) {
+        document.getElementById('s2-filename').style.display = 'flex';
+        document.getElementById('s2-filename-text').textContent = ev.virtualCol + '.jpg';
+      }
+
+      // Auto GPS
+      if(settings.autoGPS) refreshGPS();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ============================================================
+// SAVE STEP 1
+// ============================================================
+function saveStep1(afterAction) {
+  const grupa = document.getElementById('f-grupa').value;
+  if(!grupa) { showToast('\u26A0\uFE0F Wybierz grup\u0119!'); return; }
+
+  const date = document.getElementById('f-date').value;
+  const time = document.getElementById('f-time').value;
+  const gatunek = document.getElementById('f-gatunek').value;
+  let osoba = document.getElementById('f-osoba').value;
+  if(osoba === '__custom') osoba = document.getElementById('f-osoba-custom').value;
+
+  const vc = buildVirtualCol(date, formDroga, formKm, selectedStrona, gatunek);
+  const mi = calcMonthIndex(date);
+  const now = Date.now();
+
+  const ev = {
+    id: 'WR-' + now.toString(36).toUpperCase(),
+    dataSgloszen: date,
+    godzinaSgloszen: time,
+    grupa,
+    droga: formDroga,
+    km: formKm,
+    strona: selectedStrona,
+    gatunek,
+    osoba,
+    gpsRaw: null, lat: null, lng: null,
+    latDeg:null, latMin:null, latSec:null,
+    lngDeg:null, lngMin:null, lngSec:null,
+    photo: null, photoName: null,
+    godzinaDzialania: null,
+    virtualCol: vc,
+    step: 1,
+    monthIndex: mi,
+    ts: now,
+    lastModified: now
+  };
+
+  events.unshift(ev);
+  saveLocal();
+  pushToSheets(ev);
+
+  if(afterAction === 'list') {
+    resetForm();
+    showToast('\u2705 Zapisano zdarzenie');
+    renderList();
+  } else {
+    editingId = ev.id;
+    openStep2();
+  }
+}
+
+// ============================================================
+// SAVE STEP 2
+// ============================================================
+function saveStep2(withPhoto) {
+  const ev = events.find(e => e.id === editingId);
+  if(!ev) { showToast('\u26A0\uFE0F Nie znaleziono zdarzenia'); return; }
+
+  if(!actionTime) {
+    const now = new Date();
+    actionTime = String(now.getHours()).padStart(2,'0') + ':' +
+                 String(now.getMinutes()).padStart(2,'0') + ':' +
+                 String(now.getSeconds()).padStart(2,'0');
+  }
+  ev.godzinaDzialania = actionTime;
+
+  // Apply GPS
+  if(currentGPS) {
+    ev.gpsRaw = currentGPS.raw;
+    ev.lat = currentGPS.lat;
+    ev.lng = currentGPS.lng;
+    ev.latDeg = currentGPS.latDeg;
+    ev.latMin = currentGPS.latMin;
+    ev.latSec = currentGPS.latSec;
+    ev.lngDeg = currentGPS.lngDeg;
+    ev.lngMin = currentGPS.lngMin;
+    ev.lngSec = currentGPS.lngSec;
+  }
+
+  if(withPhoto && photoDataURL) {
+    ev.photo = photoDataURL;
+    ev.photoName = ev.virtualCol + '.jpg';
+    ev.step = 2;
+  }
+
+  ev.lastModified = Date.now();
+  saveLocal();
+  updateOnSheets(ev);
+  showToast('\u2705 Dokumentacja zapisana');
+  showDetail(ev.id);
+
+  // Upload zdjęcia na Google Drive (w tle, nie blokuje UI)
+  if(withPhoto && photoDataURL) {
+    uploadPhotoToDrive(ev);
+  }
+}
+
+// Upload zdjęcia na Google Drive przez Apps Script
+async function uploadPhotoToDrive(ev) {
+  const url = getGsUrl();
+  if(!url || !ev.photo) return;
+
+  const yearMonth = ev.dataSgloszen ? ev.dataSgloszen.slice(0,7) : '';
+  showToast('\u2B06\uFE0F Wysy\u0142anie zdj\u0119cia na Drive...');
+
+  try {
+    const data = await gsFetch(url, {
+      method:'POST',
+      body: JSON.stringify({
+        action: 'uploadPhoto',
+        photoData: ev.photo,
+        fileName: ev.photoName || (ev.virtualCol + '.jpg'),
+        yearMonth: yearMonth,
+        eventId: ev.id
+      })
+    });
+
+    if(data.ok) {
+      ev.driveFileId = data.fileId;
+      ev.driveUrl = data.fileUrl;
+      ev.driveThumbnail = data.thumbnailUrl;
+      ev.lastModified = Date.now();
+      saveLocal();
+      showToast('\u2705 Zdj\u0119cie na Drive!');
+    } else {
+      showToast('\u26A0\uFE0F Drive: ' + (data.error || 'b\u0142\u0105d'));
+    }
+  } catch(err) {
+    showToast('\u26A0\uFE0F Upload: ' + err.message);
+    // Dodaj do kolejki sync na później
+    addToSyncQueue(ev.id, 'photo');
+  }
+}
+
+// ============================================================
+// OPEN STEP 2
+// ============================================================
+function openStep2() {
+  photoDataURL = null;
+  actionTime = null;
+  currentGPS = null;
+
+  // Reset upload zone
+  const zone = document.getElementById('upload-zone');
+  zone.classList.remove('has-photo');
+  zone.innerHTML = '<div class="uz-icon">\u{1F4F7}</div><div class="uz-text">Stuknij aby zrobi\u0107 zdj\u0119cie</div>';
+  document.getElementById('photo-input').value = '';
+  document.getElementById('s2-filename').style.display = 'none';
+  document.getElementById('s2-action-time').textContent = '--:--:--';
+  document.getElementById('s2-gps-text').textContent = 'Oczekiwanie...';
+  ['s2-latD','s2-latM','s2-latS','s2-lngD','s2-lngM','s2-lngS'].forEach(id => {
+    document.getElementById(id).textContent = '--';
+  });
+
+  showScreen('screen-step2');
+  if(settings.autoGPS) refreshGPS();
+}
+
+function openStep2FromDetail() {
+  const ev = events.find(e => e.id === editingId);
+  if(ev) openStep2();
+}
+
+// ============================================================
+// DETAIL VIEW
+// ============================================================
+function showDetail(id) {
+  const ev = events.find(e => e.id === id);
+  if(!ev) return;
+  editingId = id;
+
+  document.getElementById('det-title').textContent = ev.gatunek || 'Szczeg\u00f3\u0142y';
+  document.getElementById('det-id').textContent = ev.id;
+  document.getElementById('det-photo-btn').style.display = ev.step === 2 ? 'none' : 'flex';
+
+  const ym = ev.dataSgloszen ? ev.dataSgloszen.slice(0,7) : '';
+  const monthName = ym ? MONTHS_PL[parseInt(ym.slice(5,7))] + ' ' + ym.slice(0,4) : '';
+
+  let html = `
+    <div class="detail-hero">
+      <div class="emoji">${getEmoji(ev.gatunek)}</div>
+      <div class="name">${ev.gatunek || '--'}</div>
+      <div class="did">${ev.id}</div>
+      <div class="badges">
+        <span class="badge ${ev.step===2?'complete':'pending'}">${ev.step===2?'\u2705 Kompletne':'\u23F3 Oczekuje foto'}</span>
+        <span class="badge" style="background:rgba(227,179,65,.12);color:var(--gold)">#${ev.monthIndex} \u00b7 ${monthName}</span>
+      </div>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-card"><div class="dl">Data</div><div class="dv">${ev.dataSgloszen}</div></div>
+      <div class="detail-card"><div class="dl">Godzina</div><div class="dv">${ev.godzinaSgloszen}</div></div>
+      <div class="detail-card"><div class="dl">Grupa</div><div class="dv">${ev.grupa}</div></div>
+      <div class="detail-card"><div class="dl">Strona</div><div class="dv">${ev.strona||'--'}</div></div>
+      <div class="detail-card"><div class="dl">Droga</div><div class="dv mono">${ev.droga||'--'}</div></div>
+      <div class="detail-card"><div class="dl">KM</div><div class="dv mono">${ev.km||'--'}</div></div>
+      <div class="detail-card"><div class="dl">Osoba</div><div class="dv">${ev.osoba||'--'}</div></div>
+      <div class="detail-card"><div class="dl">Godz. dzia\u0142ania</div><div class="dv mono">${ev.godzinaDzialania||'--'}</div></div>
+    </div>`;
+
+  // GPS
+  if(ev.gpsRaw) {
+    html += `
+    <div class="detail-full"><div class="dl">\u{1F4CD} GPS</div><div class="dv">${ev.gpsRaw}</div></div>
+    <div class="gps-grid">
+      <div class="gps-tile"><div class="gl">Szer. \u00b0</div><div class="gv">${ev.latDeg}\u00b0</div></div>
+      <div class="gps-tile"><div class="gl">Szer. '</div><div class="gv">${ev.latMin}'</div></div>
+      <div class="gps-tile"><div class="gl">Szer. "</div><div class="gv">${ev.latSec}"</div></div>
+      <div class="gps-tile"><div class="gl">D\u0142ug. \u00b0</div><div class="gv">${ev.lngDeg}\u00b0</div></div>
+      <div class="gps-tile"><div class="gl">D\u0142ug. '</div><div class="gv">${ev.lngMin}'</div></div>
+      <div class="gps-tile"><div class="gl">D\u0142ug. "</div><div class="gv">${ev.lngSec}"</div></div>
+    </div>`;
+  } else {
+    html += `<div class="detail-full"><div class="dl">\u{1F4CD} GPS</div><div class="dv" style="color:var(--text2)">Zostanie pobrane w Kroku 2</div></div>`;
+  }
+
+  // Photo
+  if(ev.photo) {
+    html += `
+    <div class="detail-photo">
+      <img src="${ev.photo}" alt="Zdj\u0119cie">
+      <div class="fname">${ev.photoName || ''}</div>
+    </div>`;
+  } else if(ev.driveThumbnail) {
+    html += `
+    <div class="detail-photo">
+      <img src="${ev.driveThumbnail}" alt="Zdj\u0119cie (Drive)">
+      <div class="fname">${ev.photoName || ''}</div>
+    </div>`;
+  } else {
+    html += `<div class="no-photo">\u{1F4F7} Brak zdj\u0119cia</div>`;
+  }
+
+  // Google Drive link
+  if(ev.driveUrl) {
+    html += `<div class="detail-full" style="cursor:pointer" onclick="window.open('${ev.driveUrl}','_blank')"><div class="dl">\u{1F4C1} Google Drive</div><div class="dv" style="color:var(--blue)">\u{1F517} Otw\u00f3rz zdj\u0119cie na Drive \u2197</div></div>`;
+  } else if(ev.photo) {
+    html += `<div class="detail-full"><div class="dl">\u{1F4C1} Google Drive</div><div class="dv" style="color:var(--gold)">Wysy\u0142anie... <span style="cursor:pointer;text-decoration:underline" onclick="retryUpload('${ev.id}')">\u{1F504} Pon\u00f3w</span></div></div>`;
+  }
+
+  // Virtual col
+  html += `<div class="detail-full"><div class="dl">\u{1F516} Nazwa pliku</div><div class="dv">${ev.virtualCol}</div></div>`;
+
+  // Step 1 action
+  if(ev.step === 1) {
+    html += `<div style="padding:12px 16px 24px"><button class="btn btn-blue btn-full" onclick="openStep2FromDetail()">\u{1F4F8} Dodaj Zdj\u0119cie (Krok 2)</button></div>`;
+  }
+
+  document.getElementById('detail-content').innerHTML = html;
+  showScreen('screen-detail');
+}
+
+// ============================================================
+// DATE NAVIGATION
+// ============================================================
+const DAYS_PL = ['Niedziela','Poniedzia\u0142ek','Wtorek','\u015aroda','Czwartek','Pi\u0105tek','Sobota'];
+const DAYS_SHORT = ['Nd','Pn','Wt','\u015ar','Cz','Pt','Sb'];
+
+function getTodayStr() {
+  const n = new Date();
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+}
+
+function initDate() {
+  const today = getTodayStr();
+  currentDate = today;
+  currentMonth = today.slice(0,7);
+}
+
+function setDateView(dateStr) {
+  currentDate = dateStr;
+  currentMonth = dateStr.slice(0,7);
+  renderList();
+}
+
+function shiftDate(delta) {
+  const d = new Date(currentDate + 'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  setDateView(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+}
+
+function goToday() {
+  setDateView(getTodayStr());
+  showToast('\u{1F4C5} Dzisiejsza data');
+}
+
+function openDatePicker() {
+  const inp = document.getElementById('date-picker-input');
+  inp.value = currentDate;
+  inp.showPicker ? inp.showPicker() : inp.focus();
+}
+
+function onDatePicked(val) {
+  if(val) setDateView(val);
+}
+
+function setMonth(ym) {
+  // Set to 1st of that month (or today if current month)
+  const today = getTodayStr();
+  if(today.slice(0,7) === ym) {
+    setDateView(today);
+  } else {
+    setDateView(ym + '-01');
+  }
+}
+
+// ============================================================
+// RENDER LIST
+// ============================================================
+function renderList() {
+  renderDateNav();
+  renderDayChips();
+  renderMonthChips();
+  renderStats();
+  renderCards();
+  renderReportBtn();
+}
+
+function renderDateNav() {
+  const d = new Date(currentDate + 'T12:00:00');
+  const day = d.getDate();
+  const monthName = MONTHS_PL[d.getMonth()+1];
+  const year = d.getFullYear();
+  const weekday = DAYS_PL[d.getDay()];
+  const isToday = currentDate === getTodayStr();
+
+  document.getElementById('dn-date').textContent = day + ' ' + monthName.toLowerCase() + ' ' + year;
+  document.getElementById('dn-day').textContent = weekday + (isToday ? ' \u2022 Dzisiaj' : '');
+}
+
+function renderDayChips() {
+  const container = document.getElementById('day-chips');
+  const d = new Date(currentDate + 'T12:00:00');
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = getTodayStr();
+
+  // Build set of dates that have events
+  const ym = currentDate.slice(0,7);
+  const eventDates = new Set();
+  events.forEach(e => {
+    if(e.dataSgloszen && e.dataSgloszen.slice(0,7) === ym) eventDates.add(e.dataSgloszen);
+  });
+
+  let html = '';
+  for(let i = 1; i <= daysInMonth; i++) {
+    const ds = ym + '-' + String(i).padStart(2,'0');
+    const dd = new Date(year, month, i);
+    const wd = DAYS_SHORT[dd.getDay()];
+    const isActive = ds === currentDate;
+    const isToday = ds === today;
+    const hasEv = eventDates.has(ds);
+    let cls = 'day-chip';
+    if(isActive) cls += ' active';
+    if(isToday) cls += ' today';
+    if(hasEv) cls += ' has-events';
+    html += `<div class="${cls}" onclick="setDateView('${ds}')"><div class="dc-weekday">${wd}</div><div class="dc-num">${i}</div><div class="dc-dot"></div></div>`;
+  }
+  container.innerHTML = html;
+
+  // Scroll active chip into view
+  requestAnimationFrame(() => {
+    const active = container.querySelector('.day-chip.active');
+    if(active) active.scrollIntoView({ inline:'center', behavior:'smooth', block:'nearest' });
+  });
+}
+
+function renderMonthChips() {
+  const months = new Set();
+  const curYM = currentDate.slice(0,7);
+  months.add(curYM);
+  const todayYM = getTodayStr().slice(0,7);
+  months.add(todayYM);
+  events.forEach(e => { if(e.dataSgloszen) months.add(e.dataSgloszen.slice(0,7)); });
+
+  const sorted = [...months].sort().reverse();
+
+  const container = document.getElementById('month-chips');
+  container.innerHTML = sorted.map(ym => {
+    const m = parseInt(ym.slice(5,7));
+    const y = ym.slice(0,4);
+    const label = MONTHS_PL[m] + ' ' + y;
+    const active = ym === curYM ? ' active' : '';
+    return `<div class="month-chip${active}" onclick="setMonth('${ym}')">${label}</div>`;
+  }).join('');
+}
+
+function renderStats() {
+  // Stats for selected DATE
+  const filtered = events.filter(e => e.dataSgloszen === currentDate);
+  document.getElementById('stat-total').textContent = filtered.length;
+  document.getElementById('stat-odolion').textContent = filtered.filter(e => e.grupa === 'Odolion').length;
+  document.getElementById('stat-kowal').textContent = filtered.filter(e => e.grupa === 'Kowal').length;
+  document.getElementById('stat-total-label').textContent = 'Dzie\u0144';
+}
+
+function renderCards() {
+  // Filter by selected DATE
+  let filtered = events.filter(e => e.dataSgloszen === currentDate);
+
+  switch(currentFilter) {
+    case 'pending': filtered = filtered.filter(e => e.step === 1); break;
+    case 'complete': filtered = filtered.filter(e => e.step === 2); break;
+    case 'odolion': filtered = filtered.filter(e => e.grupa === 'Odolion'); break;
+    case 'kowal': filtered = filtered.filter(e => e.grupa === 'Kowal'); break;
+  }
+
+  const container = document.getElementById('event-cards');
+  if(filtered.length === 0) {
+    const d = new Date(currentDate + 'T12:00:00');
+    const label = d.getDate() + ' ' + MONTHS_PL[d.getMonth()+1].toLowerCase();
+    container.innerHTML = `<div class="empty-state"><div class="es-emoji">\u{1F98C}</div><div class="es-text">Brak zdarze\u0144 na ${label}</div></div>`;
+    return;
+  }
+
+  const ym = currentDate.slice(0,7);
+  const monthName = MONTHS_PL[parseInt(ym.slice(5,7))];
+
+  container.innerHTML = filtered.map(ev => {
+    const emoji = getEmoji(ev.gatunek);
+    const statusBadge = ev.step === 2
+      ? '<span class="badge complete">\u2705 Kompletne</span>'
+      : '<span class="badge pending">\u23F3 Oczekuje foto</span>';
+    const thumb = ev.photo ? `<img class="thumb" src="${ev.photo}" alt="">` : '';
+    const stronaCh = ev.strona ? ((ev.strona[0]==='L'?'L':ev.strona[0]==='O'?'O':'P')) : '';
+    const time = ev.godzinaSgloszen || '';
+    const meta = [time, stronaCh, ev.grupa, ev.osoba].filter(Boolean).join(' \u00b7 ');
+
+    return `
+    <div class="ev-card" onclick="showDetail('${ev.id}')">
+      <div class="bar step${ev.step}"></div>
+      <div class="emoji-box">${emoji}</div>
+      <div class="info">
+        <div class="species">${ev.gatunek || '--'}</div>
+        <div class="road">${ev.droga||''} \u00b7 ${ev.km||''}</div>
+        <div class="idx">#${ev.monthIndex} \u00b7 ${monthName}</div>
+        ${statusBadge}
+        <div class="meta">${meta}</div>
+      </div>
+      ${thumb}
+    </div>`;
+  }).join('');
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderCards();
+}
+
+function renderReportBtn() {
+  const count = events.filter(e => e.dataSgloszen === currentDate).length;
+  const d = new Date(currentDate + 'T12:00:00');
+  const label = d.getDate() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear();
+  const isToday = currentDate === getTodayStr();
+  document.getElementById('report-btn-title').textContent = isToday ? 'Kopiuj Raport Dzienny' : 'Kopiuj Raport z ' + label;
+  document.getElementById('report-btn-sub').textContent = count + ' zdarze\u0144 \u2022 Skopiuj do schowka';
+}
+
+// ============================================================
+// COPY REPORT
+// ============================================================
+function copyReport() {
+  // Use currently selected date, not just today
+  const dateStr = currentDate;
+  const d = new Date(dateStr + 'T12:00:00');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yyyy = d.getFullYear();
+  const dateDisplay = dd + '.' + mm + '.' + yyyy;
+
+  const dayEvents = events.filter(e => e.dataSgloszen === dateStr);
+  const odolion = dayEvents.filter(e => e.grupa === 'Odolion').sort((a,b) => a.ts - b.ts);
+  const kowal = dayEvents.filter(e => e.grupa === 'Kowal').sort((a,b) => a.ts - b.ts);
+
+  function formatLine(ev) {
+    const sc = ev.strona ? (ev.strona[0]==='L'?'L':ev.strona[0]==='O'?'O':'P') : '';
+    const czasy = [ev.godzinaSgloszen, ev.godzinaDzialania].filter(Boolean).join('/');
+    return [ev.droga, ev.km, sc, ev.gatunek, czasy, ev.osoba].filter(Boolean).join(' ');
+  }
+
+  let text = `Potwierdzenie zebrania odpad\u00f3w z dnia ${dateDisplay}\n\nOdolion\n`;
+  text += odolion.map(formatLine).join('\n') || '(brak)';
+  text += '\n\nKowal\n';
+  text += kowal.map(formatLine).join('\n') || '(brak)';
+
+  if(navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast('\u{1F4CB} Raport z ' + dateDisplay + ' skopiowany!'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('\u{1F4CB} Raport z ' + dateDisplay + ' skopiowany!');
+  }
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg) {
+  const existing = document.querySelector('.toast');
+  if(existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ============================================================
+// SYNC STATUS
+// ============================================================
+function updateSyncStatus() {
+  const dot = document.getElementById('sync-dot');
+  const text = document.getElementById('sync-text');
+  if(isSyncing) {
+    dot.className = 'dot syncing';
+    text.textContent = 'Synchronizacja...';
+  } else if(navigator.onLine) {
+    dot.className = 'dot online';
+    const pending = syncQueue.length;
+    text.textContent = pending > 0 ? `Online \u00b7 ${pending} w kolejce` : 'Online';
+  } else {
+    dot.className = 'dot offline';
+    text.textContent = 'Offline';
+  }
+}
+
+// ============================================================
+// GOOGLE SHEETS SYNC - BIDIRECTIONAL
+// ============================================================
+function getGsUrl() {
+  return settings.gsUrl || '';
+}
+
+// Google Apps Script fetch wrapper - handles redirects & CORS
+async function gsFetch(url, options) {
+  // Google Apps Script redirects 302 to googleusercontent.com
+  // We must follow redirects. Use text/plain to avoid CORS preflight.
+  const resp = await fetch(url, {
+    redirect:'follow',
+    ...options
+  });
+  // Google Apps Script may return text/html on error pages
+  const text = await resp.text();
+  try { return JSON.parse(text); }
+  catch(e) {
+    // If HTML error page, extract message
+    if(text.includes('Google Apps Script')) throw new Error('Apps Script error - sprawd\u017a deployment');
+    if(text.includes('<!DOCTYPE')) throw new Error('Nieoczekiwana odpowied\u017a HTML');
+    throw new Error('Nieprawid\u0142owa odpowied\u017a: ' + text.slice(0,100));
+  }
+}
+
+// Push new event to sheets
+function pushToSheets(ev) {
+  const url = getGsUrl();
+  if(!url) { addToSyncQueue(ev.id, 'insert'); return; }
+
+  const row = evToRow(ev);
+  gsFetch(url, {
+    method:'POST',
+    body: JSON.stringify({ action:'insert', row })
+  }).catch(() => {
+    addToSyncQueue(ev.id, 'insert');
+  });
+}
+
+// Update existing event on sheets
+function updateOnSheets(ev) {
+  const url = getGsUrl();
+  if(!url) { addToSyncQueue(ev.id, 'update'); return; }
+
+  const row = evToRow(ev);
+  gsFetch(url, {
+    method:'POST',
+    body: JSON.stringify({ action:'update', id:ev.id, row })
+  }).catch(() => {
+    addToSyncQueue(ev.id, 'update');
+  });
+}
+
+// Convert event to row array (without photo base64 - too large for sheets)
+function evToRow(ev) {
+  const latDMS = ev.latDeg != null ? `${ev.latDeg}\u00b0${ev.latMin}'${ev.latSec}"` : '';
+  const lngDMS = ev.lngDeg != null ? `${ev.lngDeg}\u00b0${ev.lngMin}'${ev.lngSec}"` : '';
+  return [
+    ev.id,
+    ev.dataSgloszen || '',
+    ev.godzinaSgloszen || '',
+    ev.grupa || '',
+    ev.droga || '',
+    ev.km || '',
+    ev.strona || '',
+    ev.gatunek || '',
+    ev.osoba || '',
+    ev.gpsRaw || '',
+    ev.lat || '',
+    ev.lng || '',
+    latDMS,
+    lngDMS,
+    ev.photoName || '',
+    ev.godzinaDzialania || '',
+    ev.virtualCol || '',
+    ev.step || 1,
+    ev.monthIndex || 1,
+    ev.lastModified || Date.now(),
+    'yes'
+  ];
+}
+
+// Sync queue for offline changes
+function addToSyncQueue(id, action) {
+  // Remove existing entry for same id
+  syncQueue = syncQueue.filter(q => q.id !== id);
+  syncQueue.push({ id, action, ts: Date.now() });
+  saveLocal();
+  updateSyncStatus();
+}
+
+// Full bidirectional sync
+async function doSync() {
+  const url = getGsUrl();
+  if(!url || isSyncing) return;
+
+  isSyncing = true;
+  updateSyncStatus();
+
+  try {
+    // Prepare local records for sync (without photo data - too large)
+    const localRecords = events.map(ev => ({
+      id: ev.id,
+      dataSgloszen: ev.dataSgloszen,
+      godzinaSgloszen: ev.godzinaSgloszen,
+      grupa: ev.grupa,
+      droga: ev.droga,
+      km: ev.km,
+      strona: ev.strona,
+      gatunek: ev.gatunek,
+      osoba: ev.osoba,
+      gpsRaw: ev.gpsRaw,
+      lat: ev.lat,
+      lng: ev.lng,
+      latDMS: ev.latDeg != null ? `${ev.latDeg}\u00b0${ev.latMin}'${ev.latSec}"` : '',
+      lngDMS: ev.lngDeg != null ? `${ev.lngDeg}\u00b0${ev.lngMin}'${ev.lngSec}"` : '',
+      photoName: ev.photoName,
+      godzinaDzialania: ev.godzinaDzialania,
+      virtualCol: ev.virtualCol,
+      step: ev.step,
+      monthIndex: ev.monthIndex,
+      lastModified: ev.lastModified || ev.ts || 0
+    }));
+
+    const data = await gsFetch(url, {
+      method:'POST',
+      body: JSON.stringify({ action:'sync', records: localRecords })
+    });
+
+    if(data.ok) {
+      // Apply server-side updates to local
+      if(data.toUpdateClient && data.toUpdateClient.length > 0) {
+        for(const sr of data.toUpdateClient) {
+          const existing = events.find(e => e.id === sr.id);
+          if(existing) {
+            // Update local record from sheet (preserve photo since it's not in sheets)
+            const photo = existing.photo;
+            const photoName = existing.photoName;
+            mergeSheetRecord(existing, sr);
+            if(!existing.photo && photo) { existing.photo = photo; existing.photoName = photoName; }
+          } else {
+            // New record from sheet
+            const newEv = sheetRecordToEvent(sr);
+            events.unshift(newEv);
+          }
+        }
+      }
+
+      // Clear sync queue
+      syncQueue = [];
+      lastSyncTimestamp = data.syncTimestamp || Date.now();
+      saveLocal();
+      renderList();
+      showToast(`\u2705 Zsynchronizowano (${data.updatedOnSheet || 0} \u2191 ${(data.toUpdateClient||[]).length} \u2193)`);
+    } else {
+      showToast('\u26A0\uFE0F Sync: ' + (data.error || 'b\u0142\u0105d'));
+    }
+  } catch(err) {
+    showToast('\u26A0\uFE0F Sync: ' + err.message);
+  } finally {
+    isSyncing = false;
+    updateSyncStatus();
+  }
+}
+
+function mergeSheetRecord(local, sr) {
+  local.dataSgloszen = sr.dataSgloszen || local.dataSgloszen;
+  local.godzinaSgloszen = sr.godzinaSgloszen || local.godzinaSgloszen;
+  local.grupa = sr.grupa || local.grupa;
+  local.droga = sr.droga || local.droga;
+  local.km = sr.km || local.km;
+  local.strona = sr.strona || local.strona;
+  local.gatunek = sr.gatunek || local.gatunek;
+  local.osoba = sr.osoba || local.osoba;
+  local.gpsRaw = sr.gpsRaw || local.gpsRaw;
+  local.lat = sr.lat || local.lat;
+  local.lng = sr.lng || local.lng;
+  local.photoName = sr.photoName || local.photoName;
+  local.godzinaDzialania = sr.godzinaDzialania || local.godzinaDzialania;
+  local.virtualCol = sr.virtualCol || local.virtualCol;
+  local.step = sr.step || local.step;
+  local.monthIndex = sr.monthIndex || local.monthIndex;
+  local.lastModified = sr.lastModified || local.lastModified;
+  // Parse DMS if we have them from sheet
+  if(sr.latDMS) parseDMS(local, sr.latDMS, sr.lngDMS);
+}
+
+function parseDMS(ev, latDMS, lngDMS) {
+  // Parse "52°24'4.4400"" format
+  function parse(s) {
+    if(!s) return {};
+    const m = s.match(/(\d+)\u00b0(\d+)'([\d.]+)"/);
+    if(m) return { deg:parseInt(m[1]), min:parseInt(m[2]), sec:m[3] };
+    return {};
+  }
+  const lt = parse(latDMS);
+  const ln = parse(lngDMS);
+  if(lt.deg !== undefined) { ev.latDeg = lt.deg; ev.latMin = lt.min; ev.latSec = lt.sec; }
+  if(ln.deg !== undefined) { ev.lngDeg = ln.deg; ev.lngMin = ln.min; ev.lngSec = ln.sec; }
+}
+
+function sheetRecordToEvent(sr) {
+  const ev = {
+    id: sr.id,
+    dataSgloszen: sr.dataSgloszen || '',
+    godzinaSgloszen: sr.godzinaSgloszen || '',
+    grupa: sr.grupa || '',
+    droga: sr.droga || '',
+    km: sr.km || '',
+    strona: sr.strona || '',
+    gatunek: sr.gatunek || '',
+    osoba: sr.osoba || '',
+    gpsRaw: sr.gpsRaw || null,
+    lat: sr.lat || null,
+    lng: sr.lng || null,
+    latDeg:null, latMin:null, latSec:null,
+    lngDeg:null, lngMin:null, lngSec:null,
+    photo: null,
+    photoName: sr.photoName || null,
+    godzinaDzialania: sr.godzinaDzialania || null,
+    virtualCol: sr.virtualCol || '',
+    step: parseInt(sr.step) || 1,
+    monthIndex: parseInt(sr.monthIndex) || 1,
+    ts: sr.lastModified || Date.now(),
+    lastModified: sr.lastModified || Date.now()
+  };
+  if(sr.latDMS) parseDMS(ev, sr.latDMS, sr.lngDMS);
+  return ev;
+}
+
+// Test connection
+async function testConnection() {
+  saveSettings();
+  const url = getGsUrl();
+  const status = document.getElementById('conn-status');
+  if(!url) { status.innerHTML = '<span style="color:var(--orange)">\u26A0\uFE0F Podaj URL</span>'; return; }
+
+  status.innerHTML = '<span style="color:var(--gold)">Testowanie po\u0142\u0105czenia...</span>';
+  try {
+    // Try GET ping first
+    const data = await gsFetch(url + '?action=ping');
+    if(data.ok || data.status === 'ok') {
+      const rows = data.rowCount != null ? ` \u00b7 ${data.rowCount} zdarze\u0144 w arkuszu` : '';
+      status.innerHTML = `<span style="color:var(--green)">\u2705 Po\u0142\u0105czono!${rows}</span>`;
+    } else {
+      status.innerHTML = `<span style="color:var(--orange)">\u26A0\uFE0F ${data.error||'Nieznana odpowied\u017a'}</span>`;
+    }
+  } catch(err) {
+    // If GET fails (CORS), try POST ping as fallback
+    try {
+      const data2 = await gsFetch(url, {
+        method:'POST',
+        body: JSON.stringify({ action:'ping' })
+      });
+      if(data2.ok || data2.status === 'ok') {
+        status.innerHTML = '<span style="color:var(--green)">\u2705 Po\u0142\u0105czono! (POST)</span>';
+      } else {
+        status.innerHTML = `<span style="color:var(--orange)">\u26A0\uFE0F ${data2.error||'B\u0142\u0105d'}</span>`;
+      }
+    } catch(err2) {
+      status.innerHTML = `<span style="color:var(--red)">\u274C ${err.message}<br><small>Sprawd\u017a czy URL jest poprawny i czy Apps Script jest wdro\u017cony jako "Anyone"</small></span>`;
+    }
+  }
+}
+
+// Manual sync button
+function manualSync() {
+  saveSettings();
+  doSync();
+  // Also retry pending photo uploads
+  uploadPendingPhotos();
+}
+
+// Retry single photo upload from detail view
+function retryUpload(id) {
+  const ev = events.find(e => e.id === id);
+  if(ev && ev.photo) {
+    uploadPhotoToDrive(ev).then(() => {
+      if(ev.driveUrl) showDetail(ev.id); // refresh detail view
+    });
+  }
+}
+
+// Upload all photos that haven't been sent to Drive yet
+async function uploadPendingPhotos() {
+  const url = getGsUrl();
+  if(!url) return;
+
+  const pending = events.filter(e => e.photo && !e.driveUrl);
+  if(pending.length === 0) return;
+
+  showToast(`\u2B06\uFE0F Wysy\u0142anie ${pending.length} zdj\u0119\u0107 na Drive...`);
+
+  for(const ev of pending) {
+    try {
+      await uploadPhotoToDrive(ev);
+    } catch(e) {
+      // continue with next photo
+    }
+  }
+}
+
+// ============================================================
+// DEMO DATA
+// ============================================================
+function addDemoData() {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth()+1).padStart(2,'0');
+  const d = String(today.getDate()).padStart(2,'0');
+  const dateStr = `${y}-${m}-${d}`;
+  const dd = `${d}${m}${y}`;
+  const now = Date.now();
+
+  const demos = [
+    { grupa:'Odolion', droga:'DK62', km:'55+300', strona:'Prawa', gatunek:'Kot', osoba:'OD Odolion', step:2, mi:1, time:'07:30' },
+    { grupa:'Odolion', droga:'DK91', km:'255+900', strona:'Lewa', gatunek:'Sarna', osoba:'OD Odolion', step:2, mi:2, time:'08:00' },
+    { grupa:'Kowal', droga:'DK67', km:'5+600', strona:'Prawa', gatunek:'Pies', osoba:'OD Kowal', step:1, mi:1, time:'09:00' },
+    { grupa:'Kowal', droga:'DK91', km:'51+300', strona:'Prawa', gatunek:'Pies', osoba:'Policja', step:1, mi:2, time:'10:30' },
+    { grupa:'Kowal', droga:'DK91', km:'215+900', strona:'Lewa', gatunek:'Sarna', osoba:'FHU Jaroszewscy', step:1, mi:3, time:'11:00' }
+  ];
+
+  demos.forEach((demo, i) => {
+    const sc = demo.strona[0] === 'L' ? 'L' : demo.strona[0] === 'O' ? 'O' : 'P';
+    const vc = `${dd}_${demo.droga}_${demo.km}_${sc}_${demo.gatunek}`;
+    const ts = now - (demos.length - i) * 60000;
+    events.push({
+      id: 'WR-' + ts.toString(36).toUpperCase(),
+      dataSgloszen: dateStr,
+      godzinaSgloszen: demo.time,
+      grupa: demo.grupa,
+      droga: demo.droga,
+      km: demo.km,
+      strona: demo.strona,
+      gatunek: demo.gatunek,
+      osoba: demo.osoba,
+      gpsRaw: demo.step===2 ? '52.401234, 18.657891' : null,
+      lat: demo.step===2 ? 52.401234 : null,
+      lng: demo.step===2 ? 18.657891 : null,
+      latDeg: demo.step===2 ? 52 : null,
+      latMin: demo.step===2 ? 24 : null,
+      latSec: demo.step===2 ? '0.4442' : null,
+      lngDeg: demo.step===2 ? 18 : null,
+      lngMin: demo.step===2 ? 39 : null,
+      lngSec: demo.step===2 ? '28.4076' : null,
+      photo: null,
+      photoName: demo.step===2 ? vc+'.jpg' : null,
+      godzinaDzialania: demo.step===2 ? demo.time.replace(':',':')+ ':00' : null,
+      virtualCol: vc,
+      step: demo.step,
+      monthIndex: demo.mi,
+      ts,
+      lastModified: ts
+    });
+  });
+  saveLocal();
+}
+
+// ============================================================
+// CLEAR DATA
+// ============================================================
+function clearAllData() {
+  if(!confirm('Na pewno usun\u0105\u0107 wszystkie dane lokalne?')) return;
+  events = [];
+  syncQueue = [];
+  lastSyncTimestamp = 0;
+  saveLocal();
+  renderList();
+  showToast('\u{1F5D1}\uFE0F Dane wyczyszczone');
+}
+
+// ============================================================
+// SERVICE WORKER (inline registration for offline)
+// ============================================================
+if('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'wildroad-v2';
+    const URLS = ['./', './index.html'];
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(keys =>
+        Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      ));
+      self.clients.claim();
+    });
+    self.addEventListener('fetch', e => {
+      if(e.request.method !== 'GET') return;
+      e.respondWith(
+        fetch(e.request).then(r => {
+          const clone = r.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return r;
+        }).catch(() => caches.match(e.request))
+      );
+    });
+  `;
+  const blob = new Blob([swCode], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+</script>
+</body>
+</html>
