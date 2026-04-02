@@ -313,7 +313,7 @@ input.date-hidden { position:absolute; opacity:0; width:0; height:0; pointer-eve
 }
 .panel.open { transform:translateX(0); }
 .panel-head {
-  padding:16px 20px; border-bottom:1px solid var(--border);
+  padding:16px 20px; padding-top:calc(16px + var(--safe-t)); border-bottom:1px solid var(--border);
   display:flex; align-items:center; gap:12px; flex-shrink:0;
 }
 .panel-head h3 { font-size:16px; font-weight:700; flex:1; }
@@ -850,6 +850,7 @@ input.date-hidden { position:absolute; opacity:0; width:0; height:0; pointer-eve
     <input type="file" id="photo-camera" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this,'camera')">
     <input type="file" id="photo-gallery" accept="image/*" style="display:none" onchange="handlePhoto(this,'gallery')">
     <div class="preview-box" id="s2-fname" style="display:none"><span>&#x1F4C4;</span> <span id="s2-fname-t"></span></div>
+    <button class="btn btn-ghost btn-full" id="s2-change-photo" style="display:none;margin-bottom:8px;font-size:12px" onclick="resetPhotoChoice()">&#x1F504; Zmień zdjęcie</button>
 
     <div class="sec-title">&#x1F4CD; GPS</div>
     <div class="det-block" style="margin-bottom:8px">
@@ -1384,22 +1385,40 @@ function showDetail(id){
 // ============================================================
 // STEP 2
 // ============================================================
+let photoSource=null; // 'camera' or 'gallery'
 function openStep2(){
-  photoDataURL=null; actionTime=null; currentGPS=null;
+  photoDataURL=null; actionTime=null; currentGPS=null; photoSource=null;
   const uz=document.getElementById('uz');
   uz.classList.remove('has-photo');
-  uz.innerHTML='<div class="uz-icon">\u{1F4F7}</div><div class="uz-text">Stuknij aby zrobi\u0107 zdj\u0119cie</div>';
-  document.getElementById('photo-in').value='';
+  uz.innerHTML='<div class="uz-icon">\u{1F4F7}</div><div class="uz-text">Brak zdj\u0119cia</div>';
+  uz.style.display='none';
+  document.getElementById('photo-btns').style.display='block';
+  document.getElementById('photo-camera').value='';
+  document.getElementById('photo-gallery').value='';
   document.getElementById('s2-fname').style.display='none';
   document.getElementById('s2-time').textContent='--:--:--';
   document.getElementById('s2-gps').textContent='Oczekiwanie...';
+  document.getElementById('manual-gps').style.display='none';
   ['s2-ld','s2-lm','s2-ls','s2-nd','s2-nm','s2-ns'].forEach(id=>document.getElementById(id).textContent='--');
   openPanel('step2');
-  if(settings.autoGPS) refreshGPS();
+}
+function takePhoto(){ photoSource='camera'; document.getElementById('photo-camera').click(); }
+function pickFromGallery(){ photoSource='gallery'; document.getElementById('photo-gallery').click(); }
+function resetPhotoChoice(){
+  photoDataURL=null; photoSource=null;
+  const uz=document.getElementById('uz');
+  uz.classList.remove('has-photo');uz.style.display='none';
+  uz.innerHTML='<div class="uz-icon">\u{1F4F7}</div><div class="uz-text">Brak zdj\u0119cia</div>';
+  document.getElementById('photo-btns').style.display='block';
+  document.getElementById('s2-fname').style.display='none';
+  document.getElementById('s2-change-photo').style.display='none';
+  document.getElementById('photo-camera').value='';
+  document.getElementById('photo-gallery').value='';
 }
 
-function handlePhoto(input){
+function handlePhoto(input,source){
   const file=input.files[0]; if(!file) return;
+  photoSource=source||photoSource;
   const reader=new FileReader();
   reader.onload=function(e){
     const img=new Image();
@@ -1410,13 +1429,21 @@ function handlePhoto(input){
       canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);
       photoDataURL=canvas.toDataURL('image/jpeg',0.7);
       const uz=document.getElementById('uz');
+      uz.style.display='block';
       uz.classList.add('has-photo');uz.innerHTML=`<img src="${photoDataURL}" alt="">`;
+      document.getElementById('photo-btns').style.display='none';
       const now=new Date();
       actionTime=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
       document.getElementById('s2-time').textContent=actionTime;
       const ev=events.find(e=>e.id===editingId);
       if(ev){document.getElementById('s2-fname').style.display='flex';document.getElementById('s2-fname-t').textContent=ev.virtualCol+'.jpg';}
-      if(settings.autoGPS)refreshGPS();
+      document.getElementById('s2-change-photo').style.display='block';
+      if(photoSource==='camera'){
+        refreshGPS();
+      } else {
+        document.getElementById('manual-gps').style.display='block';
+        document.getElementById('s2-gps').textContent='Wpisz r\u0119cznie \u2193';
+      }
     };
     img.src=e.target.result;
   };
@@ -1670,7 +1697,27 @@ async function uploadPendingPhotos(){
 // ============================================================
 // DEMO DATA
 // ============================================================
-
+function addDemoData(){
+  const t=getTodayStr(),dd=t.slice(8,10)+t.slice(5,7)+t.slice(0,4),now=Date.now();
+  const demos=[
+    {g:'Odolion',dr:'DK62',km:'55+300',s:'Prawa',sp:'Kot',o:'OD Odolion',st:2,mi:1,ti:'07:30'},
+    {g:'Odolion',dr:'DK91',km:'255+900',s:'Lewa',sp:'Sarna',o:'OD Odolion',st:2,mi:2,ti:'08:00'},
+    {g:'Kowal',dr:'DK67',km:'5+600',s:'Prawa',sp:'Pies',o:'OD Kowal',st:1,mi:1,ti:'09:00'},
+    {g:'Kowal',dr:'DK91',km:'51+300',s:'Prawa',sp:'Pies',o:'Policja',st:1,mi:2,ti:'10:30'},
+    {g:'Kowal',dr:'DK91',km:'215+900',s:'Lewa',sp:'Sarna',o:'FHU Jaroszewscy',st:1,mi:3,ti:'11:00'}
+  ];
+  demos.forEach((d,i)=>{
+    const sc=d.s[0]==='L'?'L':d.s[0]==='O'?'O':'P';
+    const vc=dd+'_'+d.dr+'_'+d.km+'_'+sc+'_'+d.sp;
+    const ts=now-(demos.length-i)*60000;
+    events.push({id:'WR-'+ts.toString(36).toUpperCase(),dataSgloszen:t,godzinaSgloszen:d.ti,grupa:d.g,droga:d.dr,km:d.km,strona:d.s,gatunek:d.sp,osoba:d.o,gpsRaw:d.st===2?'52.401234, 18.657891':null,lat:d.st===2?52.401234:null,lng:d.st===2?18.657891:null,latDeg:d.st===2?52:null,latMin:d.st===2?24:null,latSec:d.st===2?'0.4442':null,lngDeg:d.st===2?18:null,lngMin:d.st===2?39:null,lngSec:d.st===2?'28.4076':null,photo:null,photoName:d.st===2?vc+'.jpg':null,godzinaDzialania:d.st===2?d.ti+':00':null,virtualCol:vc,step:d.st,monthIndex:d.mi,ts,lastModified:ts});
+  });
+  saveLocal();
+}
+function clearAllData(){
+  if(!confirm('Na pewno usun\u0105\u0107 wszystkie dane?'))return;
+  events=[];syncQueue=[];lastSyncTimestamp=0;saveLocal();renderAll();showToast('\u{1F5D1} Dane wyczyszczone');
+}
 
 // ============================================================
 // SERVICE WORKER
