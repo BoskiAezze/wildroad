@@ -431,11 +431,29 @@ function formatDateYMD(val) {
   return s;
 }
 
+function formatTime(val) {
+  if (!val) return '';
+  if (val instanceof Date) {
+    var h = ('0' + val.getHours()).slice(-2);
+    var m = ('0' + val.getMinutes()).slice(-2);
+    return h + ':' + m;
+  }
+  var s = String(val);
+  if (/^\d{1,2}:\d{2}/.test(s)) return s.replace(/^(\d{1,2}:\d{2}).*/, '$1');
+  var parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) {
+    var h = ('0' + parsed.getHours()).slice(-2);
+    var m = ('0' + parsed.getMinutes()).slice(-2);
+    return h + ':' + m;
+  }
+  return s;
+}
+
 function rowToObj(row) {
   return {
     id: String(row[0] || ''),
     dataSgloszen: formatDateYMD(row[1]),
-    godzinaSgloszen: String(row[2] || ''),
+    godzinaSgloszen: formatTime(row[2]),
     grupa: String(row[3] || ''),
     droga: String(row[4] || ''),
     km: String(row[5] || ''),
@@ -448,7 +466,7 @@ function rowToObj(row) {
     latDMS: String(row[12] || ''),
     lngDMS: String(row[13] || ''),
     photoName: row[14] ? String(row[14]) : null,
-    godzinaDzialania: row[15] ? String(row[15]) : null,
+    godzinaDzialania: row[15] ? formatTime(row[15]) : null,
     virtualCol: String(row[16] || ''),
     step: parseInt(row[17]) || 1,
     monthIndex: parseInt(row[18]) || 1,
