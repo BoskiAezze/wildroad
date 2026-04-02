@@ -849,7 +849,18 @@ input.date-hidden { position:absolute; opacity:0; width:0; height:0; pointer-eve
       <div class="gps-tile"><div class="gt-l">D&#x142;ug. '</div><div class="gt-v" id="s2-nm">--</div></div>
       <div class="gps-tile"><div class="gt-l">D&#x142;ug. "</div><div class="gt-v" id="s2-ns">--</div></div>
     </div>
-    <button class="btn btn-ghost btn-full" onclick="refreshGPS()" style="margin-bottom:16px">&#x1F504; Od&#x15B;wie&#x17C; GPS</button>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button class="btn btn-ghost" onclick="refreshGPS()" style="flex:1">&#x1F504; Odśwież GPS</button>
+      <button class="btn btn-ghost" onclick="toggleManualGPS()" style="flex:1">&#x270E; Wpisz ręcznie</button>
+    </div>
+    <div id="manual-gps" style="display:none;margin-bottom:16px">
+      <div class="sec-title" style="font-size:12px;margin-bottom:6px">Ręczne współrzędne (DD)</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="text" id="mgps-lat" placeholder="Szerokość (np. 52.647)" class="form-input" style="flex:1;font-family:var(--mono)">
+        <input type="text" id="mgps-lng" placeholder="Długość (np. 19.079)" class="form-input" style="flex:1;font-family:var(--mono)">
+      </div>
+      <button class="btn btn-blue btn-full" onclick="applyManualGPS()" style="font-size:13px">&#x2705; Zastosuj współrzędne</button>
+    </div>
 
     <div class="sec-title">&#x23F1; Godzina Podj&#x119;cia Dzia&#x142;ania</div>
     <div class="det-block"><div class="db-v" id="s2-time">--:--:--</div></div>
@@ -965,7 +976,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('app').classList.add('visible');
   }
   loadLocal(); loadSettings(); initTimeSelect(); setDefaultDate(); initDate();
-  if(!events.length) addData();
+  // no demo data on first launch
   renderAll(); updateClock(); setInterval(updateClock,1000); updateSyncStatus();
   window.addEventListener('online',()=>{ updateSyncStatus(); if(settings.autoSync){doSync();uploadPendingPhotos();} });
   window.addEventListener('offline',updateSyncStatus);
@@ -1090,19 +1101,25 @@ function renderMonthChips(){
 }
 
 function renderStats(){
-  const f=events.filter(e=>e.dataSgloszen===currentDate);
-  const h=`<div class="stat-box"><div class="sn">${f.length}</div><div class="sl">Dzie\u0144</div></div><div class="stat-box"><div class="sn">${f.filter(e=>e.grupa==='Odolion').length}</div><div class="sl">Odolion</div></div><div class="stat-box"><div class="sn">${f.filter(e=>e.grupa==='Kowal').length}</div><div class="sl">Kowal</div></div>`;
+  const isMonth=currentFilter==='month';
+  const ym=currentDate.slice(0,7);
+  const f=isMonth?events.filter(e=>e.dataSgloszen&&e.dataSgloszen.slice(0,7)===ym):events.filter(e=>e.dataSgloszen===currentDate);
+  const label=isMonth?'Miesi\u0105c':'Dzie\u0144';
+  const h=`<div class="stat-box"><div class="sn">${f.length}</div><div class="sl">${label}</div></div><div class="stat-box"><div class="sn">${f.filter(e=>e.grupa==='Odolion').length}</div><div class="sl">Odolion</div></div><div class="stat-box"><div class="sn">${f.filter(e=>e.grupa==='Kowal').length}</div><div class="sl">Kowal</div></div>`;
   ['s-stats','m-stats'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=h;});
 }
 
 function renderFilters(){
-  const filters=[['all','Wszystkie'],['pending','\u23F3 Bez foto'],['complete','\u2705 Kompletne'],['odolion','Odolion'],['kowal','Kowal']];
+  const filters=[['all','Wszystkie'],['month','\u{1F4C5} Ca\u0142y miesi\u0105c'],['pending','\u23F3 Bez foto'],['complete','\u2705 Kompletne'],['odolion','Odolion'],['kowal','Kowal']];
   const h=filters.map(([k,l])=>`<div class="pill${currentFilter===k?' active':''}" onclick="setFilter('${k}')">${l}</div>`).join('');
   ['s-filters','m-filters'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=h;});
 }
 
 function getFiltered(){
-  let f=events.filter(e=>e.dataSgloszen===currentDate);
+  const ym=currentDate.slice(0,7);
+  let f=currentFilter==='month'
+    ?events.filter(e=>e.dataSgloszen&&e.dataSgloszen.slice(0,7)===ym).sort((a,b)=>(a.dataSgloszen+a.godzinaSgloszen).localeCompare(b.dataSgloszen+b.godzinaSgloszen))
+    :events.filter(e=>e.dataSgloszen===currentDate);
   switch(currentFilter){
     case'pending':f=f.filter(e=>e.step===1);break;
     case'complete':f=f.filter(e=>e.step===2);break;
@@ -1115,12 +1132,14 @@ function getFiltered(){
 function renderTable(){
   const wrap=document.getElementById('table-wrap');
   const f=getFiltered();
-  if(!f.length){ wrap.innerHTML=`<div class="empty"><div class="e-icon">\u{1F98C}</div><div class="e-text">Brak zdarze\u0144 na ten dzie\u0144</div></div>`; return; }
+  const isMonth=currentFilter==='month';
+  if(!f.length){ wrap.innerHTML=`<div class="empty"><div class="e-icon">\u{1F98C}</div><div class="e-text">${isMonth?'Brak zdarze\u0144 w tym miesi\u0105cu':'Brak zdarze\u0144 na ten dzie\u0144'}</div></div>`; return; }
   const mn=MONTHS_PL[parseInt(currentDate.slice(5,7))];
-  let h=`<table class="ev-table"><thead><tr><th></th><th>Gatunek</th><th>Droga</th><th>KM</th><th>Strona</th><th>Grupa</th><th>Godzina</th><th>Osoba</th><th class="col-status">Status</th><th class="col-actions"></th></tr></thead><tbody>`;
+  let h=`<table class="ev-table"><thead><tr>${isMonth?'<th>Data</th>':'<th></th>'}<th>Gatunek</th><th>Droga</th><th>KM</th><th>Strona</th><th>Grupa</th><th>Godzina</th><th>Osoba</th><th class="col-status">Status</th><th class="col-actions"></th></tr></thead><tbody>`;
   f.forEach(ev=>{
     const badge=ev.step===2?'<span class="badge badge-complete">\u2705 Kompletne</span>':'<span class="badge badge-pending">\u23F3 Oczekuje</span>';
-    h+=`<tr onclick="showDetail('${ev.id}')"><td class="col-emoji">${getEmoji(ev.gatunek)}</td><td><strong>${ev.gatunek||'--'}</strong><br><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">#${ev.monthIndex} \u00b7 ${mn}</span></td><td class="mono">${ev.droga||'--'}</td><td class="mono">${ev.km||'--'}</td><td>${ev.strona||'--'}</td><td>${ev.grupa||'--'}</td><td class="mono">${ev.godzinaSgloszen||'--'}</td><td>${ev.osoba||'--'}</td><td>${badge}</td><td class="col-actions"><button class="tbl-btn" onclick="event.stopPropagation();editEvent('${ev.id}')" title="Edytuj">&#x270E;</button> <button class="tbl-btn" onclick="event.stopPropagation();deleteEvent('${ev.id}')" title="Usu\u0144">&#x1F5D1;</button></td></tr>`;
+    const firstCol=isMonth?`<td class="mono" style="white-space:nowrap">${ev.dataSgloszen?ev.dataSgloszen.slice(8,10)+'.'+ev.dataSgloszen.slice(5,7):''}</td>`:`<td class="col-emoji">${getEmoji(ev.gatunek)}</td>`;
+    h+=`<tr onclick="showDetail('${ev.id}')">${firstCol}<td><strong>${ev.gatunek||'--'}</strong><br><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">#${ev.monthIndex} \u00b7 ${mn}</span></td><td class="mono">${ev.droga||'--'}</td><td class="mono">${ev.km||'--'}</td><td>${ev.strona||'--'}</td><td>${ev.grupa||'--'}</td><td class="mono">${ev.godzinaSgloszen||'--'}</td><td>${ev.osoba||'--'}</td><td>${badge}</td><td class="col-actions"><button class="tbl-btn" onclick="event.stopPropagation();editEvent('${ev.id}')" title="Edytuj">&#x270E;</button> <button class="tbl-btn" onclick="event.stopPropagation();deleteEvent('${ev.id}')" title="Usu\u0144">&#x1F5D1;</button></td></tr>`;
   });
   h+='</tbody></table>';
   wrap.innerHTML=h;
@@ -1129,15 +1148,17 @@ function renderTable(){
 function renderCards(){
   const wrap=document.getElementById('cards-wrap');
   const f=getFiltered();
-  if(!f.length){ wrap.innerHTML=`<div class="empty"><div class="e-icon">\u{1F98C}</div><div class="e-text">Brak zdarze\u0144</div></div>`; return; }
+  const isMonth=currentFilter==='month';
+  if(!f.length){ wrap.innerHTML=`<div class="empty"><div class="e-icon">\u{1F98C}</div><div class="e-text">${isMonth?'Brak zdarze\u0144 w tym miesi\u0105cu':'Brak zdarze\u0144'}</div></div>`; return; }
   const mn=MONTHS_PL[parseInt(currentDate.slice(5,7))];
   let h='<div class="ev-cards">';
   f.forEach(ev=>{
     const badge=ev.step===2?'<span class="badge badge-complete">\u2705</span>':'<span class="badge badge-pending">\u23F3</span>';
     const thumb=ev.photo?`<img class="ec-thumb" src="${ev.photo}" alt="">`:'';
     const sc=ev.strona?(ev.strona[0]==='L'?'L':ev.strona[0]==='O'?'O':'P'):'';
+    const dateTag=isMonth&&ev.dataSgloszen?ev.dataSgloszen.slice(8,10)+'.'+ev.dataSgloszen.slice(5,7)+' \u00b7 ':'';
     const meta=[ev.godzinaSgloszen,sc,ev.grupa,ev.osoba].filter(Boolean).join(' \u00b7 ');
-    h+=`<div class="ev-card" onclick="showDetail('${ev.id}')"><div class="bar s${ev.step}"></div><div class="ec-emoji">${getEmoji(ev.gatunek)}</div><div class="ec-info"><div class="ec-species">${ev.gatunek||'--'} ${badge}</div><div class="ec-road">${ev.droga||''} \u00b7 ${ev.km||''}</div><div class="ec-idx">#${ev.monthIndex} \u00b7 ${mn}</div><div class="ec-meta">${meta}</div></div>${thumb}</div>`;
+    h+=`<div class="ev-card" onclick="showDetail('${ev.id}')"><div class="bar s${ev.step}"></div><div class="ec-emoji">${getEmoji(ev.gatunek)}</div><div class="ec-info"><div class="ec-species">${ev.gatunek||'--'} ${badge}</div><div class="ec-road">${ev.droga||''} \u00b7 ${ev.km||''}</div><div class="ec-idx">${dateTag}#${ev.monthIndex} \u00b7 ${mn}</div><div class="ec-meta">${meta}</div></div>${thumb}</div>`;
   });
   h+='</div>';
   wrap.innerHTML=h;
@@ -1429,6 +1450,26 @@ function refreshGPS(){
     document.getElementById('s2-ns').textContent=g.lngSec+'"';
   });
 }
+function toggleManualGPS(){
+  const el=document.getElementById('manual-gps');
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+function applyManualGPS(){
+  const lat=parseFloat(document.getElementById('mgps-lat').value);
+  const lng=parseFloat(document.getElementById('mgps-lng').value);
+  if(isNaN(lat)||isNaN(lng)||lat<-90||lat>90||lng<-180||lng>180){showToast('\u26A0\uFE0F Nieprawidłowe współrzędne');return;}
+  const dms=ddToDms(lat,lng);
+  currentGPS={lat,lng,raw:lat.toFixed(6)+', '+lng.toFixed(6),...dms};
+  document.getElementById('s2-gps').textContent=currentGPS.raw;
+  document.getElementById('s2-ld').textContent=dms.latDeg+'\u00b0';
+  document.getElementById('s2-lm').textContent=dms.latMin+"'";
+  document.getElementById('s2-ls').textContent=dms.latSec+'"';
+  document.getElementById('s2-nd').textContent=dms.lngDeg+'\u00b0';
+  document.getElementById('s2-nm').textContent=dms.lngMin+"'";
+  document.getElementById('s2-ns').textContent=dms.lngSec+'"';
+  document.getElementById('manual-gps').style.display='none';
+  showToast('\u2705 GPS ustawione ręcznie');
+}
 
 // ============================================================
 // NUMERIC KEYBOARD
@@ -1614,6 +1655,27 @@ async function uploadPendingPhotos(){
 // ============================================================
 // DEMO DATA
 // ============================================================
+function addDemoData(){
+  const t=getTodayStr(),dd=t.slice(8,10)+t.slice(5,7)+t.slice(0,4),now=Date.now();
+  const demos=[
+    {g:'Odolion',dr:'DK62',km:'55+300',s:'Prawa',sp:'Kot',o:'OD Odolion',st:2,mi:1,ti:'07:30'},
+    {g:'Odolion',dr:'DK91',km:'255+900',s:'Lewa',sp:'Sarna',o:'OD Odolion',st:2,mi:2,ti:'08:00'},
+    {g:'Kowal',dr:'DK67',km:'5+600',s:'Prawa',sp:'Pies',o:'OD Kowal',st:1,mi:1,ti:'09:00'},
+    {g:'Kowal',dr:'DK91',km:'51+300',s:'Prawa',sp:'Pies',o:'Policja',st:1,mi:2,ti:'10:30'},
+    {g:'Kowal',dr:'DK91',km:'215+900',s:'Lewa',sp:'Sarna',o:'FHU Jaroszewscy',st:1,mi:3,ti:'11:00'}
+  ];
+  demos.forEach((d,i)=>{
+    const sc=d.s[0]==='L'?'L':d.s[0]==='O'?'O':'P';
+    const vc=dd+'_'+d.dr+'_'+d.km+'_'+sc+'_'+d.sp;
+    const ts=now-(demos.length-i)*60000;
+    events.push({id:'WR-'+ts.toString(36).toUpperCase(),dataSgloszen:t,godzinaSgloszen:d.ti,grupa:d.g,droga:d.dr,km:d.km,strona:d.s,gatunek:d.sp,osoba:d.o,gpsRaw:d.st===2?'52.401234, 18.657891':null,lat:d.st===2?52.401234:null,lng:d.st===2?18.657891:null,latDeg:d.st===2?52:null,latMin:d.st===2?24:null,latSec:d.st===2?'0.4442':null,lngDeg:d.st===2?18:null,lngMin:d.st===2?39:null,lngSec:d.st===2?'28.4076':null,photo:null,photoName:d.st===2?vc+'.jpg':null,godzinaDzialania:d.st===2?d.ti+':00':null,virtualCol:vc,step:d.st,monthIndex:d.mi,ts,lastModified:ts});
+  });
+  saveLocal();
+}
+function clearAllData(){
+  if(!confirm('Na pewno usun\u0105\u0107 wszystkie dane?'))return;
+  events=[];syncQueue=[];lastSyncTimestamp=0;saveLocal();renderAll();showToast('\u{1F5D1} Dane wyczyszczone');
+}
 
 // ============================================================
 // SERVICE WORKER
