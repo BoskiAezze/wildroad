@@ -828,12 +828,27 @@ input.date-hidden { position:absolute; opacity:0; width:0; height:0; pointer-eve
       <div class="step-dot active">2</div>
     </div>
 
-    <div class="sec-title">&#x1F4F7; Zdj&#x119;cie</div>
-    <div class="upload-zone" id="uz" onclick="document.getElementById('photo-in').click()">
+    <div class="sec-title">&#x1F4F7; Zdjęcie</div>
+    <div class="upload-zone" id="uz" style="display:none">
       <div class="uz-icon">&#x1F4F7;</div>
-      <div class="uz-text">Stuknij aby zrobi&#x107; zdj&#x119;cie</div>
+      <div class="uz-text">Brak zdjęcia</div>
     </div>
-    <input type="file" id="photo-in" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+    <div id="photo-btns">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-blue" onclick="takePhoto()" style="flex:1;padding:14px 8px">
+          <div style="font-size:24px;margin-bottom:4px">&#x1F4F8;</div>
+          <div style="font-size:12px;font-weight:600">Zrób zdjęcie</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px">+ auto GPS</div>
+        </button>
+        <button class="btn btn-ghost" onclick="pickFromGallery()" style="flex:1;padding:14px 8px;border:1px dashed var(--border2)">
+          <div style="font-size:24px;margin-bottom:4px">&#x1F5BC;</div>
+          <div style="font-size:12px;font-weight:600">Z galerii</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">ręczny GPS</div>
+        </button>
+      </div>
+    </div>
+    <input type="file" id="photo-camera" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this,'camera')">
+    <input type="file" id="photo-gallery" accept="image/*" style="display:none" onchange="handlePhoto(this,'gallery')">
     <div class="preview-box" id="s2-fname" style="display:none"><span>&#x1F4C4;</span> <span id="s2-fname-t"></span></div>
 
     <div class="sec-title">&#x1F4CD; GPS</div>
