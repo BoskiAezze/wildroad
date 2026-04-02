@@ -1697,6 +1697,27 @@ async function uploadPendingPhotos(){
 // ============================================================
 // DEMO DATA
 // ============================================================
+function addDemoData(){
+  const t=getTodayStr(),dd=t.slice(8,10)+t.slice(5,7)+t.slice(0,4),now=Date.now();
+  const demos=[
+    {g:'Odolion',dr:'DK62',km:'55+300',s:'Prawa',sp:'Kot',o:'OD Odolion',st:2,mi:1,ti:'07:30'},
+    {g:'Odolion',dr:'DK91',km:'255+900',s:'Lewa',sp:'Sarna',o:'OD Odolion',st:2,mi:2,ti:'08:00'},
+    {g:'Kowal',dr:'DK67',km:'5+600',s:'Prawa',sp:'Pies',o:'OD Kowal',st:1,mi:1,ti:'09:00'},
+    {g:'Kowal',dr:'DK91',km:'51+300',s:'Prawa',sp:'Pies',o:'Policja',st:1,mi:2,ti:'10:30'},
+    {g:'Kowal',dr:'DK91',km:'215+900',s:'Lewa',sp:'Sarna',o:'FHU Jaroszewscy',st:1,mi:3,ti:'11:00'}
+  ];
+  demos.forEach((d,i)=>{
+    const sc=d.s[0]==='L'?'L':d.s[0]==='O'?'O':'P';
+    const vc=dd+'_'+d.dr+'_'+d.km+'_'+sc+'_'+d.sp;
+    const ts=now-(demos.length-i)*60000;
+    events.push({id:'WR-'+ts.toString(36).toUpperCase(),dataSgloszen:t,godzinaSgloszen:d.ti,grupa:d.g,droga:d.dr,km:d.km,strona:d.s,gatunek:d.sp,osoba:d.o,gpsRaw:d.st===2?'52.401234, 18.657891':null,lat:d.st===2?52.401234:null,lng:d.st===2?18.657891:null,latDeg:d.st===2?52:null,latMin:d.st===2?24:null,latSec:d.st===2?'0.4442':null,lngDeg:d.st===2?18:null,lngMin:d.st===2?39:null,lngSec:d.st===2?'28.4076':null,photo:null,photoName:d.st===2?vc+'.jpg':null,godzinaDzialania:d.st===2?d.ti+':00':null,virtualCol:vc,step:d.st,monthIndex:d.mi,ts,lastModified:ts});
+  });
+  saveLocal();
+}
+function clearAllData(){
+  if(!confirm('Na pewno usun\u0105\u0107 wszystkie dane?'))return;
+  events=[];syncQueue=[];lastSyncTimestamp=0;saveLocal();renderAll();showToast('\u{1F5D1} Dane wyczyszczone');
+}
 
 // ============================================================
 // SERVICE WORKER
