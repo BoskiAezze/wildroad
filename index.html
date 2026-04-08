@@ -958,6 +958,7 @@ const MONTHS_PL=['','Stycze\u0144','Luty','Marzec','Kwiecie\u0144','Maj','Czerwi
 const DAYS_PL=['Niedziela','Poniedzia\u0142ek','Wtorek','\u015aroda','Czwartek','Pi\u0105tek','Sobota'];
 const DAYS_S=['Nd','Pn','Wt','\u015ar','Cz','Pt','Sb'];
 function normDate(v){if(!v)return '';if(/^\d{4}-\d{2}-\d{2}$/.test(v))return v;const d=new Date(v);if(!isNaN(d)){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${dd}`;}return v;}
+function normTime(v){if(!v)return '';if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(v))return v;const d=new Date(v);if(!isNaN(d))return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');return v;}
 const APP_PIN='1234';
 let pinInput='';
 
@@ -1004,7 +1005,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 // STORAGE
 // ============================================================
 function loadLocal(){
-  try{events=JSON.parse(localStorage.getItem('wr_events')||'[]');}catch(e){events=[];}
+  try{events=JSON.parse(localStorage.getItem('wr_events')||'[]');events.forEach(e=>{e.dataSgloszen=normDate(e.dataSgloszen);e.godzinaSgloszen=normTime(e.godzinaSgloszen);e.godzinaDzialania=normTime(e.godzinaDzialania);});}catch(e){events=[];}
   try{syncQueue=JSON.parse(localStorage.getItem('wr_sync_queue')||'[]');}catch(e){syncQueue=[];}
   lastSyncTimestamp=parseInt(localStorage.getItem('wr_last_sync')||'0');
 }
@@ -1638,11 +1639,11 @@ async function doSync(){
   finally{isSyncing=false;updateSyncStatus();}
 }
 function mergeSheetRec(l,s){
-  l.dataSgloszen=normDate(s.dataSgloszen)||l.dataSgloszen;l.godzinaSgloszen=s.godzinaSgloszen||l.godzinaSgloszen;
+  l.dataSgloszen=normDate(s.dataSgloszen)||l.dataSgloszen;l.godzinaSgloszen=normTime(s.godzinaSgloszen)||l.godzinaSgloszen;
   l.grupa=s.grupa||l.grupa;l.droga=s.droga||l.droga;l.km=s.km||l.km;l.strona=s.strona||l.strona;
   l.gatunek=s.gatunek||l.gatunek;l.osoba=s.osoba||l.osoba;l.gpsRaw=s.gpsRaw||l.gpsRaw;
   l.lat=s.lat||l.lat;l.lng=s.lng||l.lng;l.photoName=s.photoName||l.photoName;
-  l.godzinaDzialania=s.godzinaDzialania||l.godzinaDzialania;l.virtualCol=s.virtualCol||l.virtualCol;
+  l.godzinaDzialania=normTime(s.godzinaDzialania)||l.godzinaDzialania;l.virtualCol=s.virtualCol||l.virtualCol;
   l.step=s.step||l.step;l.monthIndex=s.monthIndex||l.monthIndex;l.lastModified=s.lastModified||l.lastModified;
   if(s.latDMS)parseDMS(l,s.latDMS,s.lngDMS);
 }
@@ -1653,7 +1654,7 @@ function parseDMS(ev,ld,nd){
   if(ln.deg!==undefined){ev.lngDeg=ln.deg;ev.lngMin=ln.min;ev.lngSec=ln.sec;}
 }
 function sheetToEv(sr){
-  const ev={id:sr.id,dataSgloszen:normDate(sr.dataSgloszen)||'',godzinaSgloszen:sr.godzinaSgloszen||'',grupa:sr.grupa||'',droga:sr.droga||'',km:sr.km||'',strona:sr.strona||'',gatunek:sr.gatunek||'',osoba:sr.osoba||'',gpsRaw:sr.gpsRaw||null,lat:sr.lat||null,lng:sr.lng||null,latDeg:null,latMin:null,latSec:null,lngDeg:null,lngMin:null,lngSec:null,photo:null,photoName:sr.photoName||null,godzinaDzialania:sr.godzinaDzialania||null,virtualCol:sr.virtualCol||'',step:parseInt(sr.step)||1,monthIndex:parseInt(sr.monthIndex)||1,ts:sr.lastModified||Date.now(),lastModified:sr.lastModified||Date.now()};
+  const ev={id:sr.id,dataSgloszen:normDate(sr.dataSgloszen)||'',godzinaSgloszen:normTime(sr.godzinaSgloszen)||'',grupa:sr.grupa||'',droga:sr.droga||'',km:sr.km||'',strona:sr.strona||'',gatunek:sr.gatunek||'',osoba:sr.osoba||'',gpsRaw:sr.gpsRaw||null,lat:sr.lat||null,lng:sr.lng||null,latDeg:null,latMin:null,latSec:null,lngDeg:null,lngMin:null,lngSec:null,photo:null,photoName:sr.photoName||null,godzinaDzialania:normTime(sr.godzinaDzialania)||null,virtualCol:sr.virtualCol||'',step:parseInt(sr.step)||1,monthIndex:parseInt(sr.monthIndex)||1,ts:sr.lastModified||Date.now(),lastModified:sr.lastModified||Date.now()};
   if(sr.latDMS)parseDMS(ev,sr.latDMS,sr.lngDMS);return ev;
 }
 async function testConnection(){
